@@ -20,6 +20,7 @@ void main() async {
   try {
     await Hive.initFlutter();
     HiveFoodRepository.isInitialized = true;
+    FirebaseAuthServiceImpl.isHiveInitialized = true;
   } catch (e) {
     debugPrint('Hive initialization notice: $e');
   }

@@ -18,6 +18,8 @@ class UserModel {
     required this.createdAt,
   });
 
+  String get name => displayName;
+
   UserModel copyWith({
     String? id,
     String? email,
