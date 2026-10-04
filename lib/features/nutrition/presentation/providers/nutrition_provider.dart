@@ -43,6 +43,7 @@ class NutritionProvider extends ChangeNotifier {
   Future<bool> scanBarcode(String barcode) async {
     _scanStatus = ScanStatus.scanning;
     _errorMessage = null;
+    _currentProduct = null;
     notifyListeners();
 
     final result = await _repository.getFoodItemByBarcode(barcode);
@@ -125,6 +126,15 @@ class NutritionProvider extends ChangeNotifier {
       _currentProduct = null;
     }
     await loadRecentScans();
+  }
+
+  Future<bool> saveFoodItem(FoodItem item) async {
+    final result = await _repository.saveFoodItem(item);
+    if (result.isSuccess) {
+      await loadRecentScans();
+      return true;
+    }
+    return false;
   }
 
   Future<bool> syncCloud() async {

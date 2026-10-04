@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../utils/result.dart';
@@ -37,7 +38,7 @@ class HttpApiService implements ApiService {
             uri,
             headers: {
               'Accept': 'application/json',
-              'User-Agent': ApiConstants.openFoodFactsUserAgent,
+              if (!kIsWeb) 'User-Agent': ApiConstants.openFoodFactsUserAgent,
               ...?headers,
             },
           )
