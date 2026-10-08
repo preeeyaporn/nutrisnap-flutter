@@ -1,11 +1,11 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
+import 'package:nutrisnap/core/services/gemini_service.dart';
+import 'package:nutrisnap/features/camera/presentation/screens/ai_analysis_result_screen.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
 
 class AiFoodCameraScreen extends StatefulWidget {
   final CameraController? cameraController;
@@ -170,11 +170,11 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     if (!mounted) return;
     final result = provider.currentAiAnalysis;
     if (result != null) {
-      _showAiAnalysisModal(result);
+      _showAiAnalysisModal(result, imageBytes);
     }
   }
 
-  void _showAiAnalysisModal(NutritionAnalysisResult analysis) {
+  void _showAiAnalysisModal(NutritionAnalysisResult analysis, [List<int>? imageBytes]) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -190,7 +190,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
               Center(
                 child: Container(
                   width: 44,
@@ -202,8 +201,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Title & Status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -253,8 +250,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Food Name & Portion Box
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -276,34 +271,32 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       style: AppTypography.bodySmall,
                     ),
                     const SizedBox(height: 14),
-
-                    // Calories highlight
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildMacroPill(
                           'พลังงาน',
                           '${analysis.calories.toInt()} kcal',
-                          AppColors.calorieColor,
-                          AppColors.calorieBg,
+                          const Color(0xFFF59E0B),
+                          const Color(0xFFFEF3C7),
                         ),
                         _buildMacroPill(
                           'โปรตีน',
                           '${analysis.protein.toInt()}g',
-                          AppColors.proteinColor,
-                          AppColors.proteinBg,
+                          const Color(0xFF7C3AED),
+                          const Color(0xFFF3E8FF),
                         ),
                         _buildMacroPill(
                           'คาร์บ',
                           '${analysis.carbohydrates.toInt()}g',
-                          AppColors.carbsColor,
-                          AppColors.carbsBg,
+                          const Color(0xFF0284C7),
+                          const Color(0xFFE0F2FE),
                         ),
                         _buildMacroPill(
                           'ไขมัน',
                           '${analysis.fat.toInt()}g',
-                          AppColors.fatColor,
-                          AppColors.fatBg,
+                          const Color(0xFFE11D48),
+                          const Color(0xFFFFE4E6),
                         ),
                       ],
                     ),
@@ -311,8 +304,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 ),
               ),
               const SizedBox(height: 14),
-
-              // Ingredients tags
               Text('ส่วนผสมที่ตรวจพบ:', style: AppTypography.bodyMedium),
               const SizedBox(height: 8),
               Wrap(
@@ -335,43 +326,14 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 16),
-
-              // Advice box
-              if (analysis.advice.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F3FF),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.tips_and_updates_rounded,
-                          color: Color(0xFF7C3AED), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          analysis.advice,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: const Color(0xFF4C1D95),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-              ],
-
-              // CTA Button
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -380,8 +342,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                     Navigator.of(ctx).pop();
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => NutritionDetailScreen(
-                          item: analysis.toFoodItem(),
+                        builder: (context) => AiAnalysisResultScreen(
+                          analysis: analysis,
+                          imageBytes: imageBytes,
                         ),
                       ),
                     );
@@ -429,6 +392,80 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     );
   }
 
+  void _showGeminiApiKeyDialog() async {
+    final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
+    final controller = TextEditingController(text: savedKey);
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
+              const SizedBox(width: 8),
+              Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision วิเคราะห์ภาพอาหารจริงจาก Google AI Studio:',
+                style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'AIzaSy...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '* หากไม่ระบุ ระบบจะใช้โหมดจำลองความแม่นยำสูง (Demo Fallback)',
+                style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('ยกเลิก'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final key = controller.text.trim();
+                await GeminiServiceImpl.saveApiKey(key);
+                if (!ctx.mounted) return;
+                Navigator.of(ctx).pop();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(key.isNotEmpty
+                        ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
+                        : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)'),
+                  ),
+                );
+              },
+              child: const Text('บันทึก'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final nutritionProvider = context.watch<NutritionProvider>();
@@ -457,41 +494,44 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   // Model Selector Pill: "✦ ᯤ Gemini 1.5 Flash Vision"
                   Expanded(
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF272733).withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                      child: GestureDetector(
+                        onTap: _showGeminiApiKeyDialog,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF272733).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                            ),
                           ),
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                color: Color(0xFFA78BFA),
-                                size: 15,
-                              ),
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.wifi_tethering_rounded,
-                                color: Color(0xFFA78BFA),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Gemini 1.5 Flash Vision',
-                                style: AppTypography.chipText.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFFA78BFA),
+                                  size: 15,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  Icons.wifi_tethering_rounded,
+                                  color: Color(0xFFA78BFA),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Gemini 1.5 Flash Vision',
+                                  style: AppTypography.chipText.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

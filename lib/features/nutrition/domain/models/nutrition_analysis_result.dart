@@ -10,11 +10,13 @@ class NutritionAnalysisResult {
   final double fat;
   final double sugar;
   final double fiber;
+  final double sodium; // mg
   final double confidence; // 0.0 - 1.0
   final String healthScore; // 'เกรด A', 'เกรด B', etc.
   final List<String> detectedIngredients;
   final String advice;
   final DateTime analyzedAt;
+  final String? userCorrection; // When corrected by user
 
   const NutritionAnalysisResult({
     required this.foodName,
@@ -25,12 +27,50 @@ class NutritionAnalysisResult {
     required this.fat,
     this.sugar = 0.0,
     this.fiber = 0.0,
+    this.sodium = 780.0,
     required this.confidence,
     required this.healthScore,
     this.detectedIngredients = const [],
     this.advice = '',
     required this.analyzedAt,
+    this.userCorrection,
   });
+
+  NutritionAnalysisResult copyWith({
+    String? foodName,
+    String? estimatedPortion,
+    double? calories,
+    double? protein,
+    double? carbohydrates,
+    double? fat,
+    double? sugar,
+    double? fiber,
+    double? sodium,
+    double? confidence,
+    String? healthScore,
+    List<String>? detectedIngredients,
+    String? advice,
+    DateTime? analyzedAt,
+    String? userCorrection,
+  }) {
+    return NutritionAnalysisResult(
+      foodName: foodName ?? this.foodName,
+      estimatedPortion: estimatedPortion ?? this.estimatedPortion,
+      calories: calories ?? this.calories,
+      protein: protein ?? this.protein,
+      carbohydrates: carbohydrates ?? this.carbohydrates,
+      fat: fat ?? this.fat,
+      sugar: sugar ?? this.sugar,
+      fiber: fiber ?? this.fiber,
+      sodium: sodium ?? this.sodium,
+      confidence: confidence ?? this.confidence,
+      healthScore: healthScore ?? this.healthScore,
+      detectedIngredients: detectedIngredients ?? this.detectedIngredients,
+      advice: advice ?? this.advice,
+      analyzedAt: analyzedAt ?? this.analyzedAt,
+      userCorrection: userCorrection ?? this.userCorrection,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -42,11 +82,13 @@ class NutritionAnalysisResult {
       'fat': fat,
       'sugar': sugar,
       'fiber': fiber,
+      'sodium': sodium,
       'confidence': confidence,
       'healthScore': healthScore,
       'detectedIngredients': detectedIngredients,
       'advice': advice,
       'analyzedAt': analyzedAt.toIso8601String(),
+      'userCorrection': userCorrection,
     };
   }
 
@@ -60,6 +102,7 @@ class NutritionAnalysisResult {
       fat: (map['fat'] as num?)?.toDouble() ?? 0.0,
       sugar: (map['sugar'] as num?)?.toDouble() ?? 0.0,
       fiber: (map['fiber'] as num?)?.toDouble() ?? 0.0,
+      sodium: (map['sodium'] as num?)?.toDouble() ?? 780.0,
       confidence: (map['confidence'] as num?)?.toDouble() ?? 0.9,
       healthScore: map['healthScore']?.toString() ?? 'เกรด B',
       detectedIngredients: (map['detectedIngredients'] as List<dynamic>?)
@@ -70,6 +113,7 @@ class NutritionAnalysisResult {
       analyzedAt: map['analyzedAt'] != null
           ? DateTime.tryParse(map['analyzedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
+      userCorrection: map['userCorrection']?.toString(),
     );
   }
 
@@ -78,7 +122,7 @@ class NutritionAnalysisResult {
     return FoodItem(
       id: customId ?? 'ai_${DateTime.now().millisecondsSinceEpoch}',
       name: foodName,
-      brand: 'AI วิเคราะห์',
+      brand: 'Gemini 1.5 Flash Vision',
       servingSize: estimatedPortion,
       calories: calories,
       protein: protein,
@@ -86,6 +130,7 @@ class NutritionAnalysisResult {
       fat: fat,
       sugar: sugar,
       fiber: fiber,
+      sodium: sodium,
       nutriScore: healthScore.replaceAll('เกรด ', '').trim(),
       scannedAt: analyzedAt,
       ingredients: detectedIngredients,

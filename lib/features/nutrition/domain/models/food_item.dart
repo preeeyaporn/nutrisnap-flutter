@@ -14,6 +14,7 @@ class FoodItem {
   final double fat; // grams
   final double sugar; // grams
   final double fiber; // grams
+  final double sodium; // mg
   final String? nutriScore; // 'A', 'B', 'C', 'D', 'E'
   final DateTime scannedAt;
   final List<String> ingredients;
@@ -33,6 +34,7 @@ class FoodItem {
     required this.fat,
     this.sugar = 0.0,
     this.fiber = 0.0,
+    this.sodium = 0.0,
     this.nutriScore,
     required this.scannedAt,
     this.ingredients = const [],
@@ -53,6 +55,7 @@ class FoodItem {
     double? fat,
     double? sugar,
     double? fiber,
+    double? sodium,
     String? nutriScore,
     DateTime? scannedAt,
     List<String>? ingredients,
@@ -72,6 +75,7 @@ class FoodItem {
       fat: fat ?? this.fat,
       sugar: sugar ?? this.sugar,
       fiber: fiber ?? this.fiber,
+      sodium: sodium ?? this.sodium,
       nutriScore: nutriScore ?? this.nutriScore,
       scannedAt: scannedAt ?? this.scannedAt,
       ingredients: ingredients ?? this.ingredients,
@@ -94,6 +98,7 @@ class FoodItem {
       'fat': fat,
       'sugar': sugar,
       'fiber': fiber,
+      'sodium': sodium,
       'nutriScore': nutriScore,
       'scannedAt': scannedAt.toIso8601String(),
       'ingredients': ingredients,
@@ -116,6 +121,7 @@ class FoodItem {
       fat: (map['fat'] as num?)?.toDouble() ?? 0.0,
       sugar: (map['sugar'] as num?)?.toDouble() ?? 0.0,
       fiber: (map['fiber'] as num?)?.toDouble() ?? 0.0,
+      sodium: (map['sodium'] as num?)?.toDouble() ?? 0.0,
       nutriScore: map['nutriScore']?.toString(),
       scannedAt: map['scannedAt'] != null
           ? DateTime.tryParse(map['scannedAt'].toString()) ?? DateTime.now()

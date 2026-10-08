@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
+import 'package:nutrisnap/core/services/gemini_service.dart';
 import 'package:nutrisnap/features/camera/presentation/screens/ai_food_camera_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
+import 'package:nutrisnap/features/nutrition/presentation/screens/meal_detail_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
 import 'package:nutrisnap/features/scanner/presentation/screens/barcode_scanner_screen.dart';
 
@@ -206,11 +208,19 @@ class _HistoryTab extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => NutritionDetailScreen(item: item),
-                      ),
-                    );
+                    if (item.source == 'gemini_vision') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => MealDetailScreen(item: item),
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => NutritionDetailScreen(item: item),
+                        ),
+                      );
+                    }
                   },
                 ),
               );
@@ -308,8 +318,79 @@ class _ProfileTab extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.psychology_outlined, color: AppColors.primary),
                     title: Text('Gemini API Integration', style: AppTypography.bodyMedium),
-                    subtitle: Text('โมเดล: Gemini 1.5 Flash Vision', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                    subtitle: Text('โมเดล: Gemini 1.5 Flash Vision (แตะเพื่อตั้งค่า Key)', style: AppTypography.bodySmall),
+                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                    onTap: () async {
+                      final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
+                      final controller = TextEditingController(text: savedKey);
+
+                      if (!context.mounted) return;
+                      showDialog(
+                        context: context,
+                        builder: (ctx) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            title: Row(
+                              children: [
+                                const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
+                                const SizedBox(width: 8),
+                                Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
+                              ],
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision จาก Google AI Studio:',
+                                  style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: controller,
+                                  decoration: InputDecoration(
+                                    hintText: 'AIzaSy...',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '* หากเว้นว่าง ระบบจะใช้โหมดจำลอง (Demo Mode) อัตโนมัติ',
+                                  style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('ยกเลิก'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF7C3AED),
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  final key = controller.text.trim();
+                                  await GeminiServiceImpl.saveApiKey(key);
+                                  if (!context.mounted) return;
+                                  Navigator.of(ctx).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(key.isNotEmpty
+                                          ? 'บันทึก Gemini API Key สำเร็จ'
+                                          : 'ใช้งานโหมดจำลอง (Demo Mode)'),
+                                    ),
+                                  );
+                                },
+                                child: const Text('บันทึก'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(

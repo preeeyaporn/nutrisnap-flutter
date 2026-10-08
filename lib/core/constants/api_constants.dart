@@ -11,6 +11,7 @@ class ApiConstants {
   // Gemini API
   static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
   static const String defaultGeminiModel = 'gemini-1.5-flash';
+  static const String geminiApiKeyPrefKey = 'nutrisnap_gemini_api_key';
   
   // Timeout settings
   static const Duration connectTimeout = Duration(seconds: 15);
