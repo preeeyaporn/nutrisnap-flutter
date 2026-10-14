@@ -27,29 +27,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Check bottom navigation tabs
-      expect(find.text('กล้อง AI'), findsOneWidget);
-      expect(find.text('สแกนเนอร์'), findsOneWidget);
+      expect(find.text('หน้าหลัก'), findsOneWidget);
       expect(find.text('ประวัติ'), findsOneWidget);
-      expect(find.text('โปรไฟล์'), findsOneWidget);
-
-      // Switch to Scanner tab
-      await tester.tap(find.text('สแกนเนอร์'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('ระบบตรวจจับบาร์โค้ดสด'), findsOneWidget);
+      expect(find.text('ซิงค์ข้อมูล'), findsOneWidget);
+      expect(find.text('ตั้งค่า'), findsOneWidget);
 
       // Switch to History tab
       await tester.tap(find.text('ประวัติ'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('ประวัติการสแกนและโภชนาการ'), findsOneWidget);
+      expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
 
-      // Switch to Profile tab
-      await tester.tap(find.text('โปรไฟล์'));
+      // Switch to Sync Offline tab
+      await tester.tap(find.text('ซิงค์ข้อมูล'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('สถานะการซิงค์'), findsOneWidget);
+
+      // Switch to Settings tab
+      await tester.tap(find.text('ตั้งค่า'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('โปรไฟล์และตั้งค่า'), findsOneWidget);
-      expect(find.text('Gemini API Integration'), findsOneWidget);
     });
   });
 }

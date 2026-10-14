@@ -19,6 +19,7 @@ class FoodItem {
   final List<String> ingredients;
   final String source; // 'barcode_scan', 'ai_vision', 'manual'
   final bool isFavorite;
+  final bool isSynced;
 
   const FoodItem({
     required this.id,
@@ -38,6 +39,7 @@ class FoodItem {
     this.ingredients = const [],
     this.source = 'barcode_scan',
     this.isFavorite = false,
+    this.isSynced = true,
   });
 
   FoodItem copyWith({
@@ -58,6 +60,7 @@ class FoodItem {
     List<String>? ingredients,
     String? source,
     bool? isFavorite,
+    bool? isSynced,
   }) {
     return FoodItem(
       id: id ?? this.id,
@@ -77,6 +80,7 @@ class FoodItem {
       ingredients: ingredients ?? this.ingredients,
       source: source ?? this.source,
       isFavorite: isFavorite ?? this.isFavorite,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 
@@ -99,6 +103,7 @@ class FoodItem {
       'ingredients': ingredients,
       'source': source,
       'isFavorite': isFavorite,
+      'isSynced': isSynced,
     };
   }
 
@@ -126,6 +131,7 @@ class FoodItem {
           const [],
       source: map['source']?.toString() ?? 'barcode_scan',
       isFavorite: map['isFavorite'] == true,
+      isSynced: map['isSynced'] != false,
     );
   }
 

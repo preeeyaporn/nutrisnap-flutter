@@ -6,7 +6,7 @@ import 'package:nutrisnap/main.dart';
 
 void main() {
   group('NutriSnap End-to-End Application Flow Integration Tests', () {
-    testWidgets('Full flow: Splash -> Onboarding -> Scanner -> Detail Screen', (tester) async {
+    testWidgets('Full flow: Splash -> Onboarding -> Main Shell -> History & Sync Tabs', (tester) async {
       // Configure 390x844 mobile viewport as specified in requirements
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -45,38 +45,26 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // 4. Main App Shell loaded (Default AI Camera)
-      expect(find.text('กล้อง AI'), findsOneWidget);
+      // 4. Main App Shell loaded (Default Home)
+      expect(find.text('หน้าหลัก'), findsOneWidget);
       expect(find.text('Gemini 1.5 Flash Vision'), findsOneWidget);
 
-      // 5. Navigate to Barcode Scanner
-      final scannerTab = find.text('สแกนเนอร์');
-      await tester.tap(scannerTab);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(find.text('ระบบตรวจจับบาร์โค้ดสด'), findsOneWidget);
-      expect(find.text('8850188800123'), findsOneWidget);
-
-      // 6. Tap "ดูข้อมูลโภชนาการฉบับเต็ม"
-      final detailBtn = find.text('ดูข้อมูลโภชนาการฉบับเต็ม');
-      await tester.tap(detailBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      // 7. Verify Nutrition Detail Screen
-      expect(find.text('ข้อมูลโภชนาการฉบับเต็ม'), findsOneWidget);
-      expect(find.text('น้ำมะพร้าวสดออร์แกนิก 100%'), findsWidgets);
-      expect(find.text('สารอาหารหลัก (Macronutrients)'), findsOneWidget);
-      expect(find.text('บันทึกลงสมุดบันทึกอาหารประจำวัน'), findsOneWidget);
-
-      // 8. Tap Save to Log
-      final saveBtn = find.text('บันทึกลงสมุดบันทึกอาหารประจำวัน');
-      await tester.ensureVisible(saveBtn);
-      await tester.tap(saveBtn);
+      // 5. Navigate to History Tab
+      final historyTab = find.text('ประวัติ');
+      await tester.tap(historyTab);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.textContaining('บันทึก "น้ำมะพร้าวสดออร์แกนิก 100%" ในบันทึกอาหารแล้ว'), findsOneWidget);
+
+      expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
+
+      // 6. Navigate to Sync Offline Tab
+      final syncTab = find.text('ซิงค์ข้อมูล');
+      await tester.tap(syncTab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('สถานะการซิงค์'), findsOneWidget);
+      expect(find.text('ความสามารถของอุปกรณ์ขณะออฟไลน์'), findsOneWidget);
     });
   });
 }

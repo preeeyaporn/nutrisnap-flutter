@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/camera/presentation/screens/ai_food_camera_screen.dart';
+import 'package:nutrisnap/features/history/presentation/screens/history_screen.dart';
+import 'package:nutrisnap/features/sync/presentation/screens/sync_offline_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
-import 'package:nutrisnap/features/scanner/presentation/screens/barcode_scanner_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
@@ -17,12 +17,20 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    AiFoodCameraScreen(),
-    BarcodeScannerScreen(),
-    _HistoryTab(),
-    _ProfileTab(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const AiFoodCameraScreen(),
+      const HistoryScreen(),
+      SyncOfflineScreen(
+        onGoToHistory: () => setState(() => _currentIndex = 1),
+      ),
+      const _ProfileTab(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,29 +52,29 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(
                   index: 0,
-                  icon: Icons.camera_alt_rounded,
-                  label: 'กล้อง AI',
+                  icon: Icons.home_rounded,
+                  label: 'หน้าหลัก',
                 ),
                 _buildNavItem(
                   index: 1,
-                  icon: Icons.qr_code_scanner_rounded,
-                  label: 'สแกนเนอร์',
-                ),
-                _buildNavItem(
-                  index: 2,
                   icon: Icons.history_rounded,
                   label: 'ประวัติ',
                 ),
                 _buildNavItem(
+                  index: 2,
+                  icon: Icons.sync_rounded,
+                  label: 'ซิงค์ข้อมูล',
+                ),
+                _buildNavItem(
                   index: 3,
-                  icon: Icons.person_rounded,
-                  label: 'โปรไฟล์',
+                  icon: Icons.settings_rounded,
+                  label: 'ตั้งค่า',
                 ),
               ],
             ),
@@ -116,107 +124,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _HistoryTab extends StatelessWidget {
-  const _HistoryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('ประวัติการสแกนและโภชนาการ', style: AppTypography.heading3),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_sync_rounded, color: AppColors.primary),
-            onPressed: () async {
-              final ok = await context.read<NutritionProvider>().syncCloud();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: Consumer<NutritionProvider>(
-        builder: (context, provider, child) {
-          final items = provider.recentScans;
-          if (items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fastfood_outlined, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text('ยังไม่มีประวัติการสแกนอาหาร', style: AppTypography.bodyMedium),
-                  const SizedBox(height: 6),
-                  Text('สแกนบาร์โค้ดหรือถ่ายภาพอาหารเพื่อเริ่มต้น', style: AppTypography.bodySmall),
-                ],
-              ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Card(
-                color: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFFF1F5F9)),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      item.source == 'barcode_scan'
-                          ? Icons.qr_code_2_rounded
-                          : Icons.auto_awesome,
-                      color: const Color(0xFF7C3AED),
-                    ),
-                  ),
-                  title: Text(
-                    item.name,
-                    style: AppTypography.heading3.copyWith(fontSize: 15),
-                  ),
-                  subtitle: Text(
-                    '${item.calories.toInt()} kcal • โปรตีน ${item.protein.toInt()}g • เกรด ${item.nutriScore ?? "A"}',
-                    style: AppTypography.bodySmall,
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => NutritionDetailScreen(item: item),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }

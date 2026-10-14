@@ -15,6 +15,11 @@ class NutritionProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _isLoading = false;
 
+  String _searchQuery = '';
+  String _selectedFilter = 'all'; // 'all', 'barcode_scan', 'ai_vision', 'favorites'
+  String _sortBy = 'newest'; // 'newest', 'oldest', 'calories', 'nutriScore'
+  bool _isOnline = true;
+
   NutritionProvider({NutriSnapRepositoryImpl? repository})
       : _repository = repository ?? NutriSnapRepositoryImpl() {
     loadRecentScans();
@@ -26,6 +31,113 @@ class NutritionProvider extends ChangeNotifier {
   ScanStatus get scanStatus => _scanStatus;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+
+  String get searchQuery => _searchQuery;
+  String get selectedFilter => _selectedFilter;
+  String get sortBy => _sortBy;
+  bool get isOnline => _isOnline;
+
+  int get unsyncedCount => _recentScans.where((item) => !item.isSynced).length;
+
+  double get totalCaloriesToday {
+    final now = DateTime.now();
+    return _recentScans
+        .where((item) =>
+            item.scannedAt.year == now.year &&
+            item.scannedAt.month == now.month &&
+            item.scannedAt.day == now.day)
+        .fold(0.0, (sum, item) => sum + item.calories);
+  }
+
+  Map<String, double> get totalMacrosToday {
+    final now = DateTime.now();
+    final todayItems = _recentScans.where((item) =>
+        item.scannedAt.year == now.year &&
+        item.scannedAt.month == now.month &&
+        item.scannedAt.day == now.day);
+
+    double protein = 0.0;
+    double carbs = 0.0;
+    double fat = 0.0;
+
+    for (final item in todayItems) {
+      protein += item.protein;
+      carbs += item.carbohydrates;
+      fat += item.fat;
+    }
+
+    return {'protein': protein, 'carbs': carbs, 'fat': fat};
+  }
+
+  Map<String, int> get nutriScoreCounts {
+    final counts = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0};
+    for (final item in _recentScans) {
+      final score = (item.nutriScore ?? 'A').toUpperCase();
+      if (counts.containsKey(score)) {
+        counts[score] = (counts[score] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
+  List<FoodItem> get filteredScans {
+    var items = List<FoodItem>.from(_recentScans);
+
+    // 1. Search Query Filter
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      items = items.where((item) =>
+          item.name.toLowerCase().contains(q) ||
+          item.brand.toLowerCase().contains(q) ||
+          item.barcode.contains(q)).toList();
+    }
+
+    // 2. Category / Source Filter
+    if (_selectedFilter == 'favorites') {
+      items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter != 'all') {
+      items = items.where((item) => item.source == _selectedFilter).toList();
+    }
+
+    // 3. Sorting
+    switch (_sortBy) {
+      case 'oldest':
+        items.sort((a, b) => a.scannedAt.compareTo(b.scannedAt));
+        break;
+      case 'calories':
+        items.sort((a, b) => b.calories.compareTo(a.calories));
+        break;
+      case 'nutriScore':
+        items.sort((a, b) => (a.nutriScore ?? 'Z').compareTo(b.nutriScore ?? 'Z'));
+        break;
+      case 'newest':
+      default:
+        items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+        break;
+    }
+
+    return items;
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+
+  void setSelectedFilter(String filter) {
+    _selectedFilter = filter;
+    notifyListeners();
+  }
+
+  void setSortBy(String sort) {
+    _sortBy = sort;
+    notifyListeners();
+  }
+
+  void setOnlineStatus(bool online) {
+    _isOnline = online;
+    notifyListeners();
+  }
 
   Future<void> loadRecentScans() async {
     final result = await _repository.getRecentScans();
@@ -127,8 +239,22 @@ class NutritionProvider extends ChangeNotifier {
     await loadRecentScans();
   }
 
+  Future<void> clearAllHistory() async {
+    await _repository.clearAll();
+    _currentProduct = null;
+    await loadRecentScans();
+  }
+
+  void toggleOnlineStatus() {
+    _isOnline = !_isOnline;
+    notifyListeners();
+  }
+
   Future<bool> syncCloud() async {
     final result = await _repository.syncLocalToCloud();
+    if (result.isSuccess) {
+      await loadRecentScans();
+    }
     return result.isSuccess;
   }
 }
