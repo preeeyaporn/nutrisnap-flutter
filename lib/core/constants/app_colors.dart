@@ -40,6 +40,7 @@ class AppColors {
   // Typography Colors
   static const Color textPrimary = Color(0xFF1E1B4B);
   static const Color textSecondary = Color(0xFF4B5563);
+  static const Color neutralSecondary = Color(0xFF4B5563);
   static const Color textMuted = Color(0xFF9CA3AF);
   static const Color textOnDark = Colors.white;
   static const Color textSecondaryOnDark = Color(0xFFD1D5DB);

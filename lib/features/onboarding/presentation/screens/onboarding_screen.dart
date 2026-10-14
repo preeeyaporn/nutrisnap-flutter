@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
-import 'package:nutrisnap/features/home/presentation/screens/main_shell_screen.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -87,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _finishOnboarding() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MainShellScreen()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 

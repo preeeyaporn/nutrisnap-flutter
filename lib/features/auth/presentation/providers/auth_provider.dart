@@ -109,9 +109,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateDailyCalorieTarget(double target) async {
+  Future<bool> updateProfile({
+    String? displayName,
+    String? photoUrl,
+    double? dailyCalorieTarget,
+  }) async {
     if (_currentUser == null) return false;
-    final result = await _authService.updateProfile(dailyCalorieTarget: target);
+    final result = await _authService.updateProfile(
+      displayName: displayName,
+      photoUrl: photoUrl,
+      dailyCalorieTarget: dailyCalorieTarget,
+    );
     return result.when(
       success: (user) {
         _currentUser = user;
@@ -124,5 +132,9 @@ class AuthProvider extends ChangeNotifier {
         return false;
       },
     );
+  }
+
+  Future<bool> updateDailyCalorieTarget(double target) async {
+    return updateProfile(dailyCalorieTarget: target);
   }
 }

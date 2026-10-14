@@ -26,11 +26,14 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Check bottom navigation tabs
-      expect(find.text('หน้าหลัก'), findsOneWidget);
+      // Check bottom navigation tabs and header
+      expect(find.text('หน้าหลัก'), findsNWidgets(2));
       expect(find.text('ประวัติ'), findsOneWidget);
       expect(find.text('ซิงค์ข้อมูล'), findsOneWidget);
       expect(find.text('ตั้งค่า'), findsOneWidget);
+
+      // Verify Home tab is active by default
+      expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
 
       // Switch to History tab
       await tester.tap(find.text('ประวัติ'));
@@ -43,12 +46,47 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('สถานะการซิงค์'), findsOneWidget);
+      expect(find.text('ความสามารถของอุปกรณ์ขณะออฟไลน์'), findsOneWidget);
 
-      // Switch to Settings tab
+      // Switch to Settings/Profile tab
       await tester.tap(find.text('ตั้งค่า'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('โปรไฟล์และตั้งค่า'), findsOneWidget);
+      expect(find.text('Gemini API Integration'), findsOneWidget);
+      expect(find.text('ออกจากระบบ'), findsOneWidget);
+    });
+
+    testWidgets('sign out dialog confirms and navigates to LoginScreen', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Switch to Profile/Settings tab
+      await tester.tap(find.text('ตั้งค่า'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Scroll to sign out button and tap
+      final logoutTile = find.text('ออกจากระบบ');
+      await tester.ensureVisible(logoutTile);
+      await tester.tap(logoutTile);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Confirmation dialog should be visible
+      expect(find.text('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?'), findsOneWidget);
+
+      // Confirm sign out
+      final confirmBtn = find.widgetWithText(TextButton, 'ออกจากระบบ');
+      await tester.tap(confirmBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // Navigated to LoginScreen
+      expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
+      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
     });
   });
 }
