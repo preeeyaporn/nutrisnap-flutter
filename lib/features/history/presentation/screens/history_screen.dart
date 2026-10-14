@@ -102,11 +102,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       body: Consumer<NutritionProvider>(
         builder: (context, provider, child) {
+          final hasRealData = provider.recentScans.isNotEmpty;
+          final isDemo = !hasRealData;
           final items = provider.filteredScans;
-          final totalCalories = provider.totalCaloriesToday.toInt();
-          final totalCount = items.length;
-          final barcodeCount = items.where((i) => i.source == 'barcode_scan').length;
-          final aiCount = items.where((i) => i.source == 'ai_vision').length;
+
+          final allCount = isDemo ? 4 : provider.recentScans.length;
+          final barcodeCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'barcode_scan').length;
+          final aiCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'ai_vision').length;
+
+          final currentDisplayCount = isDemo
+              ? (provider.selectedFilter == 'barcode_scan' || provider.selectedFilter == 'ai_vision' ? 2 : 4)
+              : items.length;
+
+          final totalCalories = isDemo
+              ? 1760
+              : (provider.totalCaloriesToday == 0 ? 1760 : provider.totalCaloriesToday.toInt());
 
           return CustomScrollView(
             slivers: [
@@ -238,7 +248,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    'บันทึกแล้ว $totalCount มื้อ',
+                                    'บันทึกแล้ว $currentDisplayCount มื้อ',
                                     style: AppTypography.bodySmall.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimary,
@@ -260,7 +270,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
                                 ),
                                 TextSpan(
-                                  text: '${totalCalories == 0 ? 1760 : totalCalories} ',
+                                  text: '${NumberFormat('#,###').format(totalCalories)} ',
                                   style: AppTypography.heading3.copyWith(
                                     color: const Color(0xFF7C3AED),
                                     fontSize: 15,
@@ -283,7 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            _buildFilterPill(provider, '🍴 ทั้งหมด ($totalCount)', 'all'),
+                            _buildFilterPill(provider, '🍴 ทั้งหมด ($allCount)', 'all'),
                             const SizedBox(width: 8),
                             _buildFilterPill(provider, '║█║ บาร์โค้ด ($barcodeCount)', 'barcode_scan'),
                             const SizedBox(width: 8),
@@ -402,10 +412,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  String _getMealTime(FoodItem item) {
+    if (item.id == 'demo_1') return '12:30 น. • มื้อเที่ยง';
+    if (item.id == 'demo_2') return '08:15 น. • มื้อเช้า';
+    if (item.id == 'demo_3') return '15:00 น. • มื้อว่าง';
+    if (item.id == 'demo_4') return '19:15 น. • มื้อเย็น';
+
+    final hour = item.scannedAt.hour;
+    final timeStr = DateFormat('HH:mm').format(item.scannedAt);
+    String mealName;
+    if (hour >= 5 && hour < 11) {
+      mealName = 'มื้อเช้า';
+    } else if (hour >= 11 && hour < 14) {
+      mealName = 'มื้อเที่ยง';
+    } else if (hour >= 14 && hour < 17) {
+      mealName = 'มื้อว่าง';
+    } else {
+      mealName = 'มื้อเย็น';
+    }
+    return '$timeStr น. • $mealName';
+  }
+
   Widget _buildFoodCard(BuildContext context, NutritionProvider provider, FoodItem item) {
     final isAi = item.source == 'ai_vision';
     final badgeLabel = isAi ? '• ✨ AI ประมาณการ' : '• ║█║ บาร์โค้ด';
-    final mealTime = '${DateFormat('HH:mm').format(item.scannedAt)} น. • มื้อเที่ยง';
+    final mealTime = _getMealTime(item);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -433,22 +464,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
             // Circular Thumbnail with badge
             Stack(
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                ClipOval(
+                  child: Container(
+                    width: 60,
+                    height: 60,
                     color: const Color(0xFFF1F5F9),
-                    image: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(item.imageUrl!),
+                    child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                        ? Image.network(
+                            item.imageUrl!,
+                            width: 60,
+                            height: 60,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
                           )
-                        : null,
+                        : const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
                   ),
-                  child: item.imageUrl == null || item.imageUrl!.isEmpty
-                      ? const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28)
-                      : null,
                 ),
                 Positioned(
                   bottom: 0,
@@ -563,6 +594,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         protein: 26,
         carbohydrates: 65,
         fat: 20,
+        imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
         scannedAt: DateTime.now(),
         source: 'ai_vision',
       ),
@@ -573,6 +605,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         protein: 6,
         carbohydrates: 32,
         fat: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
         scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
         source: 'barcode_scan',
       ),
@@ -583,6 +616,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         protein: 12,
         carbohydrates: 20,
         fat: 5,
+        imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
         scannedAt: DateTime.now().subtract(const Duration(days: 1)),
         source: 'barcode_scan',
       ),
@@ -593,10 +627,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
         protein: 34,
         carbohydrates: 28,
         fat: 22,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
         scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
         source: 'ai_vision',
       ),
     ];
+
+    if (provider.selectedFilter != 'all') {
+      final filtered = demoItems.where((i) => i.source == provider.selectedFilter).toList();
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: filtered
+              .map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildFoodCard(context, provider, item),
+                  ))
+              .toList(),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

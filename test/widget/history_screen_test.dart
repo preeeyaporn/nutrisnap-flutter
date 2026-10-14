@@ -37,6 +37,12 @@ void main() {
       expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
       expect(find.textContaining('ประวัติการรับประทาน'), findsOneWidget);
       expect(find.text('ตรวจสอบและปรับแต่งบันทึกโภชนาการของคุณ'), findsOneWidget);
+      expect(find.text('บันทึกแล้ว 4 มื้อ'), findsOneWidget);
+      expect(find.text('🍴 ทั้งหมด (4)'), findsOneWidget);
+      expect(find.text('║█║ บาร์โค้ด (2)'), findsOneWidget);
+      expect(find.text('✨ กล้อง AI (2)'), findsOneWidget);
+      expect(find.textContaining('12:30 น. • มื้อเที่ยง'), findsOneWidget);
+      expect(find.textContaining('08:15 น. • มื้อเช้า'), findsOneWidget);
     });
 
     testWidgets('renders history food cards and items correctly', (tester) async {
