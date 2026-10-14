@@ -1,16 +1,46 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
-class SyncOfflineScreen extends StatelessWidget {
+class SyncOfflineScreen extends StatefulWidget {
   final VoidCallback? onGoToHistory;
 
   const SyncOfflineScreen({
     super.key,
     this.onGoToHistory,
   });
+
+  @override
+  State<SyncOfflineScreen> createState() => _SyncOfflineScreenState();
+}
+
+class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
+  Timer? _connectivityTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<NutritionProvider>().checkRealConnectivity();
+      }
+    });
+
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) {
+        context.read<NutritionProvider>().checkRealConnectivity();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivityTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +102,7 @@ class SyncOfflineScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.sync_rounded, color: Color(0xFF7C3AED)),
             onPressed: () async {
+              await context.read<NutritionProvider>().checkRealConnectivity(force: true);
               final ok = await context.read<NutritionProvider>().syncCloud();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -168,6 +199,27 @@ class SyncOfflineScreen extends StatelessWidget {
               ),
             ),
           ),
+          IconButton(
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            icon: Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF7C3AED),
+            ),
+            tooltip: 'ตรวจสอบสัญญาณเน็ตจริง',
+            onPressed: () async {
+              final status = await provider.checkRealConnectivity(force: true);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(status ? 'ตรวจพบการเชื่อมต่ออินเทอร์เน็ต (Online)' : 'ไม่มีสัญญาณอินเทอร์เน็ต (Offline)'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+          ),
           Transform.scale(
             scale: 0.75,
             child: Switch(
@@ -177,7 +229,7 @@ class SyncOfflineScreen extends StatelessWidget {
               inactiveThumbColor: const Color(0xFF7C3AED),
               inactiveTrackColor: const Color(0xFFDDD6FE),
               onChanged: (val) {
-                provider.setOnlineStatus(val);
+                provider.setOnlineStatus(val, isManual: true);
               },
             ),
           ),
@@ -560,7 +612,7 @@ class SyncOfflineScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(26),
               ),
             ),
-            onPressed: onGoToHistory,
+            onPressed: widget.onGoToHistory,
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:nutrisnap/core/services/connectivity_checker.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
 import 'package:nutrisnap/features/nutrition/data/repositories/nutrisnap_repository_impl.dart';
@@ -19,6 +20,7 @@ class NutritionProvider extends ChangeNotifier {
   String _selectedFilter = 'all'; // 'all', 'barcode_scan', 'ai_vision', 'favorites'
   String _sortBy = 'newest'; // 'newest', 'oldest', 'calories', 'nutriScore'
   bool _isOnline = true;
+  bool _manualOverride = false;
 
   NutritionProvider({NutriSnapRepositoryImpl? repository})
       : _repository = repository ?? NutriSnapRepositoryImpl() {
@@ -134,9 +136,22 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setOnlineStatus(bool online) {
+  void setOnlineStatus(bool online, {bool isManual = true}) {
+    _manualOverride = isManual;
     _isOnline = online;
     notifyListeners();
+  }
+
+  Future<bool> checkRealConnectivity({bool force = false}) async {
+    if (!force && _manualOverride) {
+      return _isOnline;
+    }
+    final online = await ConnectivityChecker.checkInternet();
+    if (_isOnline != online) {
+      _isOnline = online;
+      notifyListeners();
+    }
+    return online;
   }
 
   Future<void> loadRecentScans() async {
