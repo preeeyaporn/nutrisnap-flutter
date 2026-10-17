@@ -43,6 +43,9 @@ void main() {
       // CTA Button
       expect(find.text('เริ่มต้นใช้งาน'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+
+      // Login link
+      expect(find.textContaining('มีบัญชีอยู่แล้วใช่หรือไม่?'), findsOneWidget);
     });
 
     testWidgets('tapping CTA button navigates to onboarding screen', (tester) async {
@@ -57,6 +60,22 @@ void main() {
       // Should find onboarding screen content
       expect(find.text('ข้าม'), findsOneWidget);
       expect(find.text('ฟีเจอร์ถัดไป'), findsOneWidget);
+    });
+
+    testWidgets('tapping login link navigates directly to LoginScreen', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final loginLink = find.textContaining('มีบัญชีอยู่แล้วใช่หรือไม่?');
+      await tester.ensureVisible(loginLink);
+      await tester.tap(loginLink);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Should find login screen content
+      expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
+      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
     });
   });
 }

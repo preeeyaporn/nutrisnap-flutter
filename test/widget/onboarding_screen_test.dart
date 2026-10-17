@@ -54,5 +54,17 @@ void main() {
       expect(find.text('ขั้นตอน 2 จาก 3'), findsOneWidget);
       expect(find.text('ถ่ายภาพเพื่อวิเคราะห์ด้วย Gemini AI'), findsOneWidget);
     });
+
+    testWidgets('tapping skip navigates to LoginScreen', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ข้าม'));
+      await tester.pumpAndSettle();
+
+      // Should land on LoginScreen
+      expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
+      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
+    });
   });
 }
