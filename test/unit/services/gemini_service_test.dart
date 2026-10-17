@@ -8,6 +8,10 @@ class MockApiService extends Mock implements ApiService {}
 
 void main() {
   group('GeminiService Tests', () {
+    setUp(() {
+      GeminiServiceImpl.setGlobalApiKey(null);
+    });
+
     test('Offline / Mock fallback analyzes image and returns Pad Kra Pao matching Figma Screen 6', () async {
       final geminiService = GeminiServiceImpl(); // No API key -> demo/mock mode
       final bytes = [1, 2, 3, 4];

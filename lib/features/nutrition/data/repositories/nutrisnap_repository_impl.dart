@@ -24,6 +24,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
         _openFoodFactsService = openFoodFactsService ?? OpenFoodFactsServiceImpl(),
         _geminiService = geminiService ?? GeminiServiceImpl();
 
+  GeminiService get geminiService => _geminiService;
+
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
     // 1. Save to local database (Hive)

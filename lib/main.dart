@@ -26,9 +26,17 @@ void main() async {
   }
 
   // Initialize Services & Repositories
+  final savedApiKey = await GeminiServiceImpl.getSavedApiKey();
+  final activeApiKey = (savedApiKey != null && savedApiKey.trim().isNotEmpty)
+      ? savedApiKey.trim()
+      : null;
+  if (activeApiKey != null) {
+    GeminiServiceImpl.setGlobalApiKey(activeApiKey);
+  }
+
   final authService = FirebaseAuthServiceImpl();
   final openFoodFactsService = OpenFoodFactsServiceImpl();
-  final geminiService = GeminiServiceImpl();
+  final geminiService = GeminiServiceImpl(apiKey: activeApiKey);
   final localFoodRepo = HiveFoodRepository();
   final cloudFoodRepo = FirestoreFoodRepository(userId: 'default_user');
 

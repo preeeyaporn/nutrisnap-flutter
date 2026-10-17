@@ -22,11 +22,14 @@ abstract class GeminiService {
     required String question,
     FoodItem? currentFood,
   });
+
+  void updateApiKey(String? newKey);
 }
 
 class GeminiServiceImpl implements GeminiService {
   final ApiService _apiService;
   String? _apiKey;
+  static String? _globalApiKey;
 
   GeminiServiceImpl({
     ApiService? apiService,
@@ -39,27 +42,46 @@ class GeminiServiceImpl implements GeminiService {
     if (_apiKey != null && _apiKey!.trim().isNotEmpty) {
       return _apiKey;
     }
+    if (_globalApiKey != null && _globalApiKey!.trim().isNotEmpty) {
+      return _globalApiKey;
+    }
     const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
     if (envKey.isNotEmpty) return envKey;
     return null;
   }
 
-  set apiKey(String? value) => _apiKey = value;
+  set apiKey(String? value) {
+    _apiKey = value;
+    _globalApiKey = value;
+  }
 
+  @override
   void updateApiKey(String? newKey) {
     _apiKey = newKey;
+    _globalApiKey = newKey;
+  }
+
+  static void setGlobalApiKey(String? key) {
+    _globalApiKey = key;
   }
 
   static Future<String?> getSavedApiKey() async {
+    if (_globalApiKey != null && _globalApiKey!.trim().isNotEmpty) {
+      return _globalApiKey;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(ApiConstants.geminiApiKeyPrefKey);
-    } catch (_) {
-      return null;
-    }
+      final key = prefs.getString(ApiConstants.geminiApiKeyPrefKey);
+      if (key != null && key.trim().isNotEmpty) {
+        _globalApiKey = key.trim();
+        return key.trim();
+      }
+    } catch (_) {}
+    return ApiConstants.defaultGeminiApiKey.isNotEmpty ? ApiConstants.defaultGeminiApiKey : null;
   }
 
   static Future<void> saveApiKey(String key) async {
+    _globalApiKey = key.trim();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(ApiConstants.geminiApiKeyPrefKey, key.trim());
@@ -291,6 +313,31 @@ ${userNotes != null ? "ข้อมูลเพิ่มเติมหรือ
           'น้ำจิ้มสุกี้เต้าหู้ยี้สูตรเข้มข้น',
         ],
         advice: 'เมนูควบคุมน้ำหนักยอดเยี่ยม ใยอาหารสูง แนะนำใส่น้ำจิ้มพอเหมาะเพื่อคุมโซเดียม',
+        analyzedAt: DateTime.now(),
+        userCorrection: cleanName,
+      );
+    } else if (cleanName.contains('หมูย่าง') ||
+        cleanName.contains('คอหมู') ||
+        cleanName.contains('หมูปิ้ง')) {
+      return NutritionAnalysisResult(
+        foodName: cleanName.contains('คอ') ? 'คอหมูย่าง' : cleanName,
+        estimatedPortion: '1 จาน (200 กรัม)',
+        calories: 420.0,
+        protein: 32.0,
+        carbohydrates: 6.0,
+        fat: 30.0,
+        sugar: 2.0,
+        fiber: 0.5,
+        sodium: 640.0,
+        confidence: 0.94,
+        healthScore: 'เกรด B',
+        detectedIngredients: [
+          'เนื้อสันคอหมูหมักซอสย่างเตาถ่าน',
+          'น้ำจิ้มแจ่วรสเด็ด',
+          'ข้าวคั่วและพริกป่น',
+          'ผักชีฝรั่งและแตงกวาเคียง',
+        ],
+        advice: 'ให้โปรตีนสูงจากเนื้อหมู แนะนำเลือกรับประทานคู่กับผักสดและจิ้มน้ำจิ้มพอดีคำเพื่อคุมโซเดียม',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );

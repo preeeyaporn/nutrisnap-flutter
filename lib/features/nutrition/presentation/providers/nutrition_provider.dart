@@ -77,6 +77,7 @@ class NutritionProvider extends ChangeNotifier {
 
   Future<bool> analyzeFoodImage(
     List<int> imageBytes, {
+    String mimeType = 'image/jpeg',
     String? userNotes,
   }) async {
     _isLoading = true;
@@ -86,6 +87,7 @@ class NutritionProvider extends ChangeNotifier {
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: imageBytes,
+      mimeType: mimeType,
       userNotes: userNotes,
     );
 

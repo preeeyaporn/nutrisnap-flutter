@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/core/services/gemini_service.dart';
@@ -146,6 +147,34 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       }
     } else {
       setState(() => _isFlashOn = !_isFlashOn);
+    }
+  }
+
+  Future<void> _pickFromGalleryAndAnalyze() async {
+    final provider = context.read<NutritionProvider>();
+    if (provider.isLoading) return;
+
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+      final bytes = await pickedFile.readAsBytes();
+      await provider.analyzeFoodImage(bytes, mimeType: 'image/jpeg');
+
+      if (!mounted) return;
+      final result = provider.currentAiAnalysis;
+      if (result != null) {
+        _showAiAnalysisModal(result, bytes);
+      }
+    } catch (e) {
+      debugPrint('Error picking from gallery: $e');
+      await _captureAndAnalyze();
     }
   }
 
@@ -446,6 +475,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
               onPressed: () async {
                 final key = controller.text.trim();
                 await GeminiServiceImpl.saveApiKey(key);
+                if (mounted) {
+                  context.read<NutritionProvider>().repository.geminiService.updateApiKey(key.isNotEmpty ? key : null);
+                }
                 if (!ctx.mounted) return;
                 Navigator.of(ctx).pop();
                 if (!mounted) return;
@@ -679,7 +711,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       children: [
                         // Left: Gallery button "คลังภาพ"
                         GestureDetector(
-                          onTap: _captureAndAnalyze,
+                          onTap: _pickFromGalleryAndAnalyze,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [

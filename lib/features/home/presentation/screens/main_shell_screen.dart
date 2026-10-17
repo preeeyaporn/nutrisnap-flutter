@@ -512,6 +512,9 @@ class _ProfileTab extends StatelessWidget {
                                 onPressed: () async {
                                   final key = controller.text.trim();
                                   await GeminiServiceImpl.saveApiKey(key);
+                                  if (context.mounted) {
+                                    context.read<NutritionProvider>().repository.geminiService.updateApiKey(key.isNotEmpty ? key : null);
+                                  }
                                   if (!context.mounted) return;
                                   Navigator.of(ctx).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
