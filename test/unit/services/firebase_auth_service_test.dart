@@ -88,5 +88,24 @@ void main() {
       final result = await authService.updateProfile(displayName: 'Test');
       expect(result.isFailure, isTrue);
     });
+
+    test('signInWithEmailAndPassword retrieves original registered name for returning user', () async {
+      final signUpRes = await authService.signUpWithEmailAndPassword(
+        'registered_user@nutrisnap.com',
+        'password123',
+        displayName: 'ปรียาภรณ์ แสนดี',
+      );
+      expect(signUpRes.isSuccess, isTrue);
+
+      await authService.signOut();
+      expect(authService.currentUser, isNull);
+
+      final signInRes = await authService.signInWithEmailAndPassword(
+        'registered_user@nutrisnap.com',
+        'password123',
+      );
+      expect(signInRes.isSuccess, isTrue);
+      expect(authService.currentUser?.displayName, 'ปรียาภรณ์ แสนดี');
+    });
   });
 }

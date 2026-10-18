@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/onboarding/presentation/screens/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -42,6 +44,18 @@ class _SplashScreenState extends State<SplashScreen>
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             const OnboardingScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  void _navigateToLogin() {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const LoginScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -360,7 +374,30 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _navigateToLogin,
+                  child: Text.rich(
+                    TextSpan(
+                      text: 'มีบัญชีอยู่แล้วใช่หรือไม่? ',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.neutralSecondary,
+                        fontSize: 14,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'เข้าสู่ระบบ',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
 
                 // Bottom home indicator bar
                 Container(
