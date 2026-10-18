@@ -157,5 +157,34 @@ void main() {
       expect(find.text('70'), findsOneWidget);
       expect(find.text('อัปเดตข้อมูลโภชนาการจาก Open Food Facts สำเร็จ'), findsOneWidget);
     });
+
+    testWidgets('portion stepper increments and decrements dynamically recalculating calories', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Initial calories: 65 kcal, multiplier x1
+      expect(find.text('65'), findsWidgets);
+      expect(find.text('x1'), findsOneWidget);
+
+      // Tap '+' stepper to increase to x1.5 -> 65 * 1.5 = 97.5 ≈ 98 kcal
+      final addBtn = find.byIcon(Icons.add);
+      expect(addBtn, findsOneWidget);
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('x1.5'), findsOneWidget);
+      expect(find.text('98'), findsWidgets);
+
+      // Tap '-' stepper twice to reduce to x0.5 -> 65 * 0.5 = 32.5 ≈ 33 kcal
+      final removeBtn = find.byIcon(Icons.remove);
+      expect(removeBtn, findsOneWidget);
+      await tester.tap(removeBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(removeBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('x0.5'), findsOneWidget);
+      expect(find.text('33'), findsWidgets);
+    });
   });
 }
