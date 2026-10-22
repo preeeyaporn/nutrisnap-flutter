@@ -31,7 +31,7 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
       }
     });
 
-    _connectivityTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    _connectivityTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted) {
         context.read<NutritionProvider>().checkRealConnectivity();
       }
@@ -130,7 +130,7 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
                         ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด ${provider.recentScans.length} รายการ)'
                         : 'ซิงค์ไม่สำเร็จ: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
                     backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
-                    duration: const Duration(seconds: 3),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -158,11 +158,6 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Top Status Banner
-                _buildTopStatusBanner(provider, isOnline),
-
-                const SizedBox(height: 16),
-
                 // Main Central Offline Card
                 _buildMainOfflineCard(context, provider, isOnline, unsyncedCount),
 
@@ -186,77 +181,6 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildTopStatusBanner(NutritionProvider provider, bool isOnline) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: isOnline ? const Color(0xFFF0FDF4) : const Color(0xFFF3E8FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isOnline ? const Color(0xFF86EFAC) : const Color(0xFFDDD6FE),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isOnline ? Icons.wifi_rounded : Icons.cloud_off_rounded,
-            color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF7C3AED),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isOnline
-                  ? 'เชื่อมต่ออินเทอร์เน็ต • ระบบพร้อมซิงค์ Firestore'
-                  : 'ไม่มีการเชื่อมต่ออินเทอร์เน็ต • SQLite / Hive พร้อมทำงาน',
-              style: AppTypography.bodySmall.copyWith(
-                color: isOnline ? const Color(0xFF15803D) : const Color(0xFF6B21A8),
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-            ),
-          ),
-          IconButton(
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            icon: Icon(
-              Icons.refresh_rounded,
-              size: 18,
-              color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF7C3AED),
-            ),
-            tooltip: 'ตรวจสอบสัญญาณเน็ตจริง',
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final status = await provider.checkRealConnectivity(force: true);
-              if (mounted) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(status ? 'ตรวจพบการเชื่อมต่ออินเทอร์เน็ต (Online)' : 'ไม่มีสัญญาณอินเทอร์เน็ต (Offline)'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
-          ),
-          Transform.scale(
-            scale: 0.75,
-            child: Switch(
-              value: isOnline,
-              activeThumbColor: const Color(0xFF16A34A),
-              activeTrackColor: const Color(0xFFDCFCE7),
-              inactiveThumbColor: const Color(0xFF7C3AED),
-              inactiveTrackColor: const Color(0xFFDDD6FE),
-              onChanged: (val) {
-                provider.setOnlineStatus(val, isManual: true);
-              },
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -290,14 +214,14 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
               Container(
                 width: 90,
                 height: 90,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF3E8FF),
+                decoration: BoxDecoration(
+                  color: isOnline ? const Color(0xFFDCFCE7) : const Color(0xFFF3E8FF),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.wifi_off_rounded,
+                child: Icon(
+                  isOnline ? Icons.cloud_done_rounded : Icons.wifi_off_rounded,
                   size: 42,
-                  color: Color(0xFFA78BFA),
+                  color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFA78BFA),
                 ),
               ),
               Positioned(
@@ -306,11 +230,15 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
                 child: Container(
                   width: 32,
                   height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF7C3AED),
+                  decoration: BoxDecoration(
+                    color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF7C3AED),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.dns_rounded, color: Colors.white, size: 18),
+                  child: Icon(
+                    isOnline ? Icons.sync_rounded : Icons.dns_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
             ],
@@ -618,7 +546,7 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
                         ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด ${provider.recentScans.length} รายการ)'
                         : 'ซิงค์ไม่สำเร็จ: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
                     backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
-                    duration: const Duration(seconds: 3),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }

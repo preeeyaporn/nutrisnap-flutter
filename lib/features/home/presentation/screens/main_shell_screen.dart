@@ -17,7 +17,7 @@ class MainShellScreen extends StatefulWidget {
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class _MainShellScreenState extends State<MainShellScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
@@ -25,6 +25,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pages = [
       HomeScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
       const HistoryScreen(),
@@ -33,6 +34,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ),
       const _ProfileTab(),
     ];
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<NutritionProvider>().checkRealConnectivity();
+    }
   }
 
   @override

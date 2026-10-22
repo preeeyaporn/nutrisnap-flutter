@@ -20,7 +20,6 @@ class NutritionProvider extends ChangeNotifier {
   String _selectedFilter = 'all'; // 'all', 'barcode_scan', 'ai_vision', 'favorites'
   String _sortBy = 'newest'; // 'newest', 'oldest', 'calories', 'nutriScore'
   bool _isOnline = true;
-  bool _manualOverride = false;
 
   NutritionProvider({NutriSnapRepositoryImpl? repository})
       : _repository = repository ?? NutriSnapRepositoryImpl() {
@@ -136,20 +135,21 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setOnlineStatus(bool online, {bool isManual = true}) {
-    _manualOverride = isManual;
-    _isOnline = online;
-    notifyListeners();
+  void setOnlineStatus(bool online) {
+    if (_isOnline != online) {
+      _isOnline = online;
+      notifyListeners();
+    }
   }
 
   Future<bool> checkRealConnectivity({bool force = false}) async {
-    if (!force && _manualOverride) {
-      return _isOnline;
-    }
     final online = await ConnectivityChecker.checkInternet();
     if (_isOnline != online) {
       _isOnline = online;
       notifyListeners();
+      if (_isOnline && unsyncedCount > 0) {
+        syncCloud();
+      }
     }
     return online;
   }
