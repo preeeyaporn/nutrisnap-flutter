@@ -72,8 +72,23 @@ class NutriSnapApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService: authService),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<AuthProvider, NutritionProvider>(
           create: (_) => NutritionProvider(repository: repository),
+          update: (_, authProvider, nutritionProvider) {
+            final user = authProvider.currentUser;
+            if (user != null) {
+              final effectiveId = (user.email != null && user.email!.contains('@'))
+                  ? user.email!.trim()
+                  : user.id;
+              nutritionProvider?.updateUserInfo(
+                newUserId: effectiveId,
+                email: user.email,
+                displayName: user.displayName,
+                dailyTarget: user.dailyCalorieTarget,
+              );
+            }
+            return nutritionProvider!;
+          },
         ),
       ],
       child: MaterialApp(

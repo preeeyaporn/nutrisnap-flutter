@@ -11,6 +11,9 @@ import 'package:nutrisnap/features/nutrition/domain/repositories/food_repository
 /// with seamless offline/testing fallback.
 class FirestoreFoodRepository implements FoodRepository {
   String userId;
+  String? userEmail;
+  String? userDisplayName;
+  double? userDailyTarget;
   final FirebaseFirestore? _customFirestore;
   final Map<String, Map<String, dynamic>> _cloudStore = {};
 
@@ -20,6 +23,35 @@ class FirestoreFoodRepository implements FoodRepository {
   void updateUserId(String newUserId) {
     if (newUserId.isNotEmpty) {
       userId = newUserId;
+    }
+  }
+
+  void updateUserInfo({
+    required String newUserId,
+    String? email,
+    String? displayName,
+    double? dailyTarget,
+  }) {
+    if (newUserId.isNotEmpty) {
+      userId = newUserId;
+    }
+    if (email != null && email.isNotEmpty) userEmail = email;
+    if (displayName != null && displayName.isNotEmpty) userDisplayName = displayName;
+    if (dailyTarget != null) userDailyTarget = dailyTarget;
+
+    try {
+      final uDoc = _userDoc;
+      if (uDoc != null) {
+        uDoc.set({
+          'userId': userId,
+          if (userEmail != null) 'email': userEmail,
+          if (userDisplayName != null) 'displayName': userDisplayName,
+          if (userDailyTarget != null) 'dailyCalorieTarget': userDailyTarget,
+          'lastActiveAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true)).ignore();
+      }
+    } catch (e) {
+      debugPrint('Firestore updateUserInfo error: $e');
     }
   }
 
@@ -44,19 +76,31 @@ class FirestoreFoodRepository implements FoodRepository {
     return null;
   }
 
-  CollectionReference<Map<String, dynamic>>? get _collection {
+  DocumentReference<Map<String, dynamic>>? get _userDoc {
     final fs = firestoreInstance;
     if (fs == null) return null;
-    return fs
-        .collection(ApiConstants.firestoreUsersCollection)
-        .doc(userId)
-        .collection(ApiConstants.firestoreFoodLogsCollection);
+    return fs.collection(ApiConstants.firestoreUsersCollection).doc(userId);
+  }
+
+  CollectionReference<Map<String, dynamic>>? get _collection {
+    return _userDoc?.collection(ApiConstants.firestoreFoodLogsCollection);
   }
 
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
     try {
       final col = _collection;
+      final uDoc = _userDoc;
+      if (uDoc != null) {
+        uDoc.set({
+          'userId': userId,
+          if (userEmail != null) 'email': userEmail,
+          if (userDisplayName != null) 'displayName': userDisplayName,
+          if (userDailyTarget != null) 'dailyCalorieTarget': userDailyTarget,
+          'lastActiveAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true)).ignore();
+      }
+
       final data = {
         ...item.toMap(),
         '_updatedAt': DateTime.now().toIso8601String(),
@@ -70,6 +114,7 @@ class FirestoreFoodRepository implements FoodRepository {
       }
       return Result.success(null);
     } catch (e) {
+      debugPrint('Firestore saveFoodItem error: $e');
       return Result.failure('เกิดข้อผิดพลาดในการบันทึกขึ้น Firestore: $e');
     }
   }
@@ -211,6 +256,18 @@ class FirestoreFoodRepository implements FoodRepository {
     try {
       final col = _collection;
       final fs = firestoreInstance;
+      final uDoc = _userDoc;
+
+      if (uDoc != null) {
+        await uDoc.set({
+          'userId': userId,
+          if (userEmail != null) 'email': userEmail,
+          if (userDisplayName != null) 'displayName': userDisplayName,
+          if (userDailyTarget != null) 'dailyCalorieTarget': userDailyTarget,
+          'lastSyncAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
+
       if (col != null && fs != null && items.isNotEmpty) {
         final batch = fs.batch();
         for (final item in items) {

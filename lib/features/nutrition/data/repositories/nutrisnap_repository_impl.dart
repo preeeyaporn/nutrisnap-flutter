@@ -31,6 +31,23 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     }
   }
 
+  void updateUserInfo({
+    required String newUserId,
+    String? email,
+    String? displayName,
+    double? dailyTarget,
+  }) {
+    final cloud = cloudRepository;
+    if (cloud is FirestoreFoodRepository) {
+      cloud.updateUserInfo(
+        newUserId: newUserId,
+        email: email,
+        displayName: displayName,
+        dailyTarget: dailyTarget,
+      );
+    }
+  }
+
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
     // 1. Save to local database (Hive)

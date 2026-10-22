@@ -5,6 +5,8 @@ import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -79,6 +81,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
               final provider = context.read<NutritionProvider>();
+              UserModel? authUser;
+              try {
+                authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+              } catch (_) {}
+              if (authUser != null) {
+                final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+                    ? authUser.email!.trim()
+                    : authUser.id;
+                provider.updateUserInfo(
+                  newUserId: effectiveId,
+                  email: authUser.email,
+                  displayName: authUser.displayName,
+                  dailyTarget: authUser.dailyCalorieTarget,
+                );
+              }
               final ok = await provider.syncCloud();
               if (context.mounted) {
                 scaffoldMessenger.showSnackBar(

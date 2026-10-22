@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/history/presentation/screens/history_screen.dart';
 import 'package:nutrisnap/features/home/presentation/screens/home_screen.dart';
@@ -36,6 +37,23 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUser = context.watch<AuthProvider>().currentUser;
+    if (authUser != null) {
+      final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+          ? authUser.email!.trim()
+          : authUser.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<NutritionProvider>().updateUserInfo(
+            newUserId: effectiveId,
+            email: authUser.email,
+            displayName: authUser.displayName,
+            dailyTarget: authUser.dailyCalorieTarget,
+          );
+        }
+      });
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -219,10 +237,34 @@ class _ProfileTab extends StatelessWidget {
                     subtitle: Text('เชื่อมต่อ Firebase และสำรองข้อมูล', style: AppTypography.bodySmall),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () async {
-                      final ok = await context.read<NutritionProvider>().syncCloud();
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final provider = context.read<NutritionProvider>();
+                      UserModel? authUser;
+                      try {
+                        authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+                      } catch (_) {}
+                      if (authUser != null) {
+                        final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+                            ? authUser.email!.trim()
+                            : authUser.id;
+                        provider.updateUserInfo(
+                          newUserId: effectiveId,
+                          email: authUser.email,
+                          displayName: authUser.displayName,
+                          dailyTarget: authUser.dailyCalorieTarget,
+                        );
+                      }
+                      final ok = await provider.syncCloud();
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(ok ? 'ซิงค์ข้อมูลแล้ว' : 'ไม่สามารถซิงค์ได้')),
+                        final name = authUser?.displayName.isNotEmpty == true ? authUser!.displayName : (authUser?.email ?? 'ผู้ใช้');
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text(ok
+                                ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (ผู้ใช้: $name)'
+                                : 'ไม่สามารถซิงค์ได้: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
+                            backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
                         );
                       }
                     },

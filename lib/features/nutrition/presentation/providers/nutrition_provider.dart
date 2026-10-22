@@ -269,6 +269,20 @@ class NutritionProvider extends ChangeNotifier {
     _repository.updateUserId(newUserId);
   }
 
+  void updateUserInfo({
+    required String newUserId,
+    String? email,
+    String? displayName,
+    double? dailyTarget,
+  }) {
+    _repository.updateUserInfo(
+      newUserId: newUserId,
+      email: email,
+      displayName: displayName,
+      dailyTarget: dailyTarget,
+    );
+  }
+
   Future<bool> syncCloud() async {
     _isLoading = true;
     notifyListeners();

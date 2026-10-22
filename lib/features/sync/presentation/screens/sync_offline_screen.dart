@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 
 class SyncOfflineScreen extends StatefulWidget {
   final VoidCallback? onGoToHistory;
@@ -104,7 +106,22 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
               final provider = context.read<NutritionProvider>();
+              UserModel? authUser;
+              try {
+                authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+              } catch (_) {}
               await provider.checkRealConnectivity(force: true);
+              if (authUser != null) {
+                final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+                    ? authUser.email!.trim()
+                    : authUser.id;
+                provider.updateUserInfo(
+                  newUserId: effectiveId,
+                  email: authUser.email,
+                  displayName: authUser.displayName,
+                  dailyTarget: authUser.dailyCalorieTarget,
+                );
+              }
               final ok = await provider.syncCloud();
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
@@ -578,6 +595,21 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             ),
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
+              UserModel? authUser;
+              try {
+                authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+              } catch (_) {}
+              if (authUser != null) {
+                final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+                    ? authUser.email!.trim()
+                    : authUser.id;
+                provider.updateUserInfo(
+                  newUserId: effectiveId,
+                  email: authUser.email,
+                  displayName: authUser.displayName,
+                  dailyTarget: authUser.dailyCalorieTarget,
+                );
+              }
               final ok = await provider.syncCloud();
               if (mounted) {
                 scaffoldMessenger.showSnackBar(
