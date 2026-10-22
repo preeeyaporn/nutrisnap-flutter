@@ -77,12 +77,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
           IconButton(
             icon: const Icon(Icons.sync_rounded, color: Color(0xFF7C3AED)),
             onPressed: () async {
-              final ok = await context.read<NutritionProvider>().syncCloud();
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final provider = context.read<NutritionProvider>();
+              final ok = await provider.syncCloud();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
-                    duration: const Duration(seconds: 2),
+                    content: Text(ok
+                        ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด \ รายการ)'
+                        : 'ซิงค์ไม่สำเร็จ: '),
+                    backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
+                    duration: const Duration(seconds: 3),
                   ),
                 );
               }

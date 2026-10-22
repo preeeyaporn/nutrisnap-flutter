@@ -10,12 +10,18 @@ import 'package:nutrisnap/features/nutrition/domain/repositories/food_repository
 /// Manages live cloud sync and remote backup of food logs to Google Cloud Firestore,
 /// with seamless offline/testing fallback.
 class FirestoreFoodRepository implements FoodRepository {
-  final String userId;
+  String userId;
   final FirebaseFirestore? _customFirestore;
   final Map<String, Map<String, dynamic>> _cloudStore = {};
 
   FirestoreFoodRepository({required this.userId, FirebaseFirestore? firestore})
       : _customFirestore = firestore;
+
+  void updateUserId(String newUserId) {
+    if (newUserId.isNotEmpty) {
+      userId = newUserId;
+    }
+  }
 
   bool get _isFirebaseAvailable {
     try {
@@ -219,6 +225,7 @@ class FirestoreFoodRepository implements FoodRepository {
           );
         }
         await batch.commit();
+        debugPrint('Firestore syncBatch: successfully wrote ${items.length} items to ${col.path}');
       } else {
         for (final item in items) {
           await saveFoodItem(item);
@@ -226,6 +233,7 @@ class FirestoreFoodRepository implements FoodRepository {
       }
       return Result.success(items.length);
     } catch (e) {
+      debugPrint('Firestore syncBatch error: $e');
       return Result.failure('ซิงค์ข้อมูลไปยัง Cloud ล้มเหลว: $e');
     }
   }

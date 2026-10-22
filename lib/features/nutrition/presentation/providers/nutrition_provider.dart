@@ -265,11 +265,28 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateUserId(String newUserId) {
+    _repository.updateUserId(newUserId);
+  }
+
   Future<bool> syncCloud() async {
+    _isLoading = true;
+    notifyListeners();
     final result = await _repository.syncLocalToCloud();
-    if (result.isSuccess) {
-      await loadRecentScans();
-    }
-    return result.isSuccess;
+    _isLoading = false;
+    return result.when(
+      success: (count) async {
+        _errorMessage = null;
+        await loadRecentScans();
+        notifyListeners();
+        return true;
+      },
+      failure: (message, ex) {
+        _errorMessage = message;
+        debugPrint('Sync failure:  ()');
+        notifyListeners();
+        return false;
+      },
+    );
   }
 }
