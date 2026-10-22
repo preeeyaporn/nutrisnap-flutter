@@ -856,14 +856,11 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
           final foodItem = _mapJsonToFoodItem(cleanBarcode, product);
           return Result.success(foodItem);
         } else {
-          // Fallback to estimated food profile for unrecognized barcode so user can still see nutrition
-          final estimated = _createEstimatedItemForUnknownBarcode(cleanBarcode);
-          return Result.success(estimated);
+          return Result.failure('ไม่พบข้อมูลสินค้ารหัสบาร์โค้ด $cleanBarcode ในระบบ Open Food Facts');
         }
       },
       failure: (message, exception) {
-        final estimated = _createEstimatedItemForUnknownBarcode(cleanBarcode);
-        return Result.success(estimated);
+        return Result.failure('เชื่อมต่อ Open Food Facts API ล้มเหลว: $message');
       },
     );
   }
@@ -1137,26 +1134,4 @@ double sodium = parseNutriment([
     );
   }
 
-  FoodItem _createEstimatedItemForUnknownBarcode(String barcode) {
-    return FoodItem(
-      id: 'off_',
-      barcode: barcode,
-      name: 'ขนมขบเคี้ยว / อาหารสำเร็จรูป ()',
-      brand: 'สินค้าบาร์โค้ดไทย (ประมาณการ)',
-      imageUrl: null,
-      servingSize: '30 กรัม (1 ซอง)',
-      calories: 150.0,
-      protein: 2.0,
-      carbohydrates: 17.0,
-      fat: 8.0,
-      sugar: 2.0,
-      fiber: 1.0,
-      saturatedFat: 3.5,
-      sodium: 180.0,
-      nutriScore: 'C',
-      scannedAt: DateTime.now(),
-      ingredients: ['แป้งและธัญพืช', 'น้ำมันพืช', 'เครื่องปรุงรสมาตรฐาน'],
-      source: 'barcode_scan',
-    );
-  }
 }
