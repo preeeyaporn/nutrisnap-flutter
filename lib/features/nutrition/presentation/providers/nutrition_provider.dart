@@ -260,6 +260,12 @@ class NutritionProvider extends ChangeNotifier {
     await loadRecentScans();
   }
 
+  Future<bool> saveFoodItem(FoodItem item) async {
+    final result = await _repository.saveFoodItem(item);
+    await loadRecentScans();
+    return result.isSuccess;
+  }
+
   void toggleOnlineStatus() {
     _isOnline = !_isOnline;
     notifyListeners();
