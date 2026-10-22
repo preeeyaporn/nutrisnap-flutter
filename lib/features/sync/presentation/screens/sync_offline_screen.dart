@@ -110,8 +110,8 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(ok
-                        ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด \ รายการ)'
-                        : 'ซิงค์ไม่สำเร็จ: '),
+                        ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด ${provider.recentScans.length} รายการ)'
+                        : 'ซิงค์ไม่สำเร็จ: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
                     backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
                     duration: const Duration(seconds: 3),
                   ),
@@ -583,8 +583,8 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(ok
-                        ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด \ รายการ)'
-                        : 'ซิงค์ไม่สำเร็จ: '),
+                        ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (อัปโหลด ${provider.recentScans.length} รายการ)'
+                        : 'ซิงค์ไม่สำเร็จ: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
                     backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
                     duration: const Duration(seconds: 3),
                   ),

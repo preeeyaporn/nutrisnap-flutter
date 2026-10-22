@@ -224,7 +224,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
     final syncResult = await cloud.syncBatch(items);
     if (syncResult.isSuccess && _localRepository is HiveFoodRepository) {
-      await (_localRepository as HiveFoodRepository).markAsSynced(items.map((i) => i.id).toList());
+      await _localRepository.markAsSynced(items.map((i) => i.id).toList());
     }
     return syncResult;
   }
