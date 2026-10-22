@@ -47,6 +47,14 @@ class HttpApiService implements ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return Result.success(decoded);
+      } else if (response.statusCode == 404) {
+        try {
+          final decoded = json.decode(utf8.decode(response.bodyBytes));
+          if (decoded is Map<String, dynamic>) {
+            return Result.success(decoded);
+          }
+        } catch (_) {}
+        return Result.failure('HTTP Error: 404 - Not Found');
       } else {
         return Result.failure(
           'HTTP Error: ${response.statusCode} - ${response.reasonPhrase}',
@@ -82,6 +90,14 @@ class HttpApiService implements ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final decoded = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return Result.success(decoded);
+      } else if (response.statusCode == 404) {
+        try {
+          final decoded = json.decode(utf8.decode(response.bodyBytes));
+          if (decoded is Map<String, dynamic>) {
+            return Result.success(decoded);
+          }
+        } catch (_) {}
+        return Result.failure('HTTP Error: 404 - Not Found');
       } else {
         return Result.failure(
           'HTTP Error: ${response.statusCode} - ${response.body}',
