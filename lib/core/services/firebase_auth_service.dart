@@ -31,6 +31,38 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       dailyCalorieTarget: 2000.0,
       createdAt: DateTime(2026, 1, 1),
     ),
+    'test@nutrisnap.com': UserModel(
+      id: 'usr_test_nutrisnap_com',
+      email: 'test@nutrisnap.com',
+      displayName: 'test',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime(2026, 1, 1),
+    ),
+    'test@nutri.com': UserModel(
+      id: 'usr_test_nutri_com',
+      email: 'test@nutri.com',
+      displayName: 'test',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime(2026, 1, 1),
+    ),
+    'user@nutri.com': UserModel(
+      id: 'usr_user_nutri_com',
+      email: 'user@nutri.com',
+      displayName: 'user',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime(2026, 1, 1),
+    ),
+  };
+
+  /// In-memory user passwords cache
+  static final Map<String, String> _userPasswords = {
+    'user@nutrisnap.com': 'password123',
+    'test@nutrisnap.com': 'password123',
+    'test@nutri.com': 'password123',
+    'user@nutri.com': 'password123',
   };
 
   FirebaseAuthServiceImpl({UserModel? initialUser}) {
@@ -61,7 +93,7 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     }
   }
 
-  Future<void> _persistUser(UserModel user) async {
+  Future<void> _persistUser(UserModel user, {String? password}) async {
     if (user.email == null || user.email!.isEmpty) return;
     final key = user.email!.trim().toLowerCase();
 
@@ -69,7 +101,11 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     try {
       final box = await _getUserBox();
       if (box != null) {
-        await box.put(key, user.toMap());
+        final map = user.toMap();
+        if (password != null) {
+          map['password'] = password;
+        }
+        await box.put(key, map);
       }
     } catch (_) {}
 
@@ -78,6 +114,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
       await prefs.setString('reg_user_name_$key', user.displayName).timeout(const Duration(milliseconds: 100));
       await prefs.setDouble('reg_user_target_$key', user.dailyCalorieTarget).timeout(const Duration(milliseconds: 100));
+      if (password != null) {
+        await prefs.setString('reg_user_password_$key', password).timeout(const Duration(milliseconds: 100));
+      }
     } catch (_) {}
   }
 
@@ -90,6 +129,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       if (box != null) {
         final Map? data = box.get(key);
         if (data != null) {
+          if (data['password'] != null) {
+            _userPasswords[key] = data['password'].toString();
+          }
           return UserModel.fromMap(Map<String, dynamic>.from(data));
         }
       }
@@ -100,6 +142,10 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
       final savedName = prefs.getString('reg_user_name_$key');
       final savedTarget = prefs.getDouble('reg_user_target_$key');
+      final savedPassword = prefs.getString('reg_user_password_$key');
+      if (savedPassword != null && savedPassword.isNotEmpty) {
+        _userPasswords[key] = savedPassword;
+      }
       if (savedName != null && savedName.isNotEmpty) {
         return UserModel(
           id: 'usr_${key.replaceAll('@', '_').replaceAll('.', '_')}',
@@ -109,6 +155,32 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
           dailyCalorieTarget: savedTarget ?? 2000.0,
           createdAt: DateTime.now(),
         );
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<String?> _loadPasswordFromDatabase(String email) async {
+    final key = email.trim().toLowerCase();
+
+    // 1. Try Hive database
+    try {
+      final box = await _getUserBox();
+      if (box != null) {
+        final Map? data = box.get(key);
+        if (data != null && data['password'] != null) {
+          return data['password'].toString();
+        }
+      }
+    } catch (_) {}
+
+    // 2. Try SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
+      final savedPwd = prefs.getString('reg_user_password_$key');
+      if (savedPwd != null && savedPwd.isNotEmpty) {
+        return savedPwd;
       }
     } catch (_) {}
 
@@ -140,19 +212,22 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       }
     }
 
-    // 3. Fallback for unregistered or default account
+    // 3. Block login if user is not registered in the system
     if (user == null) {
-      final defaultName = normalizedEmail == 'user@nutrisnap.com' ? 'ปรียาภรณ์' : email.split('@').first;
-      user = UserModel(
-        id: 'usr_${normalizedEmail.replaceAll('@', '_').replaceAll('.', '_')}',
-        email: email.trim(),
-        displayName: defaultName,
-        isAnonymous: false,
-        dailyCalorieTarget: 2000.0,
-        createdAt: DateTime.now(),
-      );
-      _registeredUsers[normalizedEmail] = user;
-      await _persistUser(user);
+      return Result.failure('ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ');
+    }
+
+    // 4. Verify password
+    String? expectedPassword = _userPasswords[normalizedEmail];
+    if (expectedPassword == null) {
+      expectedPassword = await _loadPasswordFromDatabase(normalizedEmail);
+      if (expectedPassword != null) {
+        _userPasswords[normalizedEmail] = expectedPassword;
+      }
+    }
+
+    if (expectedPassword != null && expectedPassword != password) {
+      return Result.failure('รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านอีกครั้ง');
     }
 
     _currentUser = user;
@@ -188,9 +263,10 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       createdAt: DateTime.now(),
     );
 
-    // Save in registry and persist to database
+    // Save in registry and persist to database with password
     _registeredUsers[normalizedEmail] = user;
-    await _persistUser(user);
+    _userPasswords[normalizedEmail] = password;
+    await _persistUser(user, password: password);
 
     _currentUser = user;
     _authStateController.add(_currentUser);

@@ -135,5 +135,41 @@ void main() {
       expect(find.text('ยืนยันรหัสผ่านอีกครั้ง'), findsOneWidget);
       expect(find.text('เป้าหมายด้านสุขภาพของคุณ'), findsOneWidget);
     });
+
+    testWidgets('shows error snackbar when account is not registered', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextFormField);
+      await tester.enterText(textFields.at(0), 'unknown@test.com');
+      await tester.enterText(textFields.at(1), 'password123');
+      await tester.pumpAndSettle();
+
+      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
+      await tester.ensureVisible(loginBtn);
+      await tester.tap(loginBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.textContaining('ไม่พบบัญชีผู้ใช้นี้ในระบบ'), findsOneWidget);
+    });
+
+    testWidgets('shows error snackbar when password is incorrect', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final textFields = find.byType(TextFormField);
+      await tester.enterText(textFields.at(0), 'user@nutrisnap.com');
+      await tester.enterText(textFields.at(1), 'wrongpassword999');
+      await tester.pumpAndSettle();
+
+      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
+      await tester.ensureVisible(loginBtn);
+      await tester.tap(loginBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.textContaining('รหัสผ่านไม่ถูกต้อง'), findsOneWidget);
+    });
   });
 }

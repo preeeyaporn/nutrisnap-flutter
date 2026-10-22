@@ -107,5 +107,23 @@ void main() {
       expect(signInRes.isSuccess, isTrue);
       expect(authService.currentUser?.displayName, 'ปรียาภรณ์ แสนดี');
     });
+
+    test('signInWithEmailAndPassword fails when account is not registered', () async {
+      final result = await authService.signInWithEmailAndPassword(
+        'not_registered@nutrisnap.com',
+        'password123',
+      );
+      expect(result.isFailure, isTrue);
+      expect(result.errorOrNull, contains('ไม่พบบัญชีผู้ใช้นี้ในระบบ'));
+    });
+
+    test('signInWithEmailAndPassword fails when password is incorrect', () async {
+      final result = await authService.signInWithEmailAndPassword(
+        'user@nutrisnap.com',
+        'wrongpassword999',
+      );
+      expect(result.isFailure, isTrue);
+      expect(result.errorOrNull, contains('รหัสผ่านไม่ถูกต้อง'));
+    });
   });
 }
