@@ -29,9 +29,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   @override
   void initState() {
     super.initState();
-    
-    // --- ตั้งค่า Gemini API Key อัตโนมัติ ---
-    GeminiServiceImpl.saveApiKey('REDACTED');
 
     WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
