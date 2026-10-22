@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "544925687316",
+    "project_id": "nutrisnap-39c8f",
+    "storage_bucket": "nutrisnap-39c8f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:544925687316:android:24cc998a1dbe6254339101",
+        "android_client_info": {
+          "package_name": "com.nutrisnap.nutrisnap"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMfSQr4Rs0vPBIJhV3CtJAZu9MVM7SOf4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

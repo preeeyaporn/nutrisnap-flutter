@@ -102,10 +102,12 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
           IconButton(
             icon: const Icon(Icons.sync_rounded, color: Color(0xFF7C3AED)),
             onPressed: () async {
-              await context.read<NutritionProvider>().checkRealConnectivity(force: true);
-              final ok = await context.read<NutritionProvider>().syncCloud();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final provider = context.read<NutritionProvider>();
+              await provider.checkRealConnectivity(force: true);
+              final ok = await provider.syncCloud();
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
                     duration: const Duration(seconds: 2),
@@ -209,9 +211,10 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             ),
             tooltip: 'ตรวจสอบสัญญาณเน็ตจริง',
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               final status = await provider.checkRealConnectivity(force: true);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+              if (mounted) {
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(status ? 'ตรวจพบการเชื่อมต่ออินเทอร์เน็ต (Online)' : 'ไม่มีสัญญาณอินเทอร์เน็ต (Offline)'),
                     duration: const Duration(seconds: 1),

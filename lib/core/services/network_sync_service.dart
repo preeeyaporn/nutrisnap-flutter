@@ -17,10 +17,11 @@ class NetworkSyncService extends ChangeNotifier {
   final FoodRepository? _cloudRepo;
 
   NetworkSyncService({
-    this._localRepo,
+    FoodRepository? localRepo,
     FoodRepository? cloudRepo,
     bool initialOnline = true,
-  })  : _cloudRepo = cloudRepo,
+  })  : _localRepo = localRepo, // ignore: prefer_initializing_formals
+        _cloudRepo = cloudRepo, // ignore: prefer_initializing_formals
         _isOnline = initialOnline;
 
   bool get isOnline => _isOnline;
