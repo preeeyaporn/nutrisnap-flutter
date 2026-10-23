@@ -116,7 +116,7 @@ void main() {
 
       // Verify that recalculation updated the food and calories
       expect(find.textContaining('ข้าวมันไก่'), findsWidgets);
-      expect(find.textContaining('Gemini คำนวณสารอาหารใหม่'), findsOneWidget);
+      expect(find.textContaining('เรียบร้อยแล้ว'), findsOneWidget);
     });
 
     testWidgets('tapping save button navigates to Screen 10 (MealDetailScreen)', (tester) async {

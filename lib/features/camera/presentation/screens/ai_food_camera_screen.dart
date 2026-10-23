@@ -1,10 +1,10 @@
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/core/services/gemini_service.dart';
 import 'package:nutrisnap/features/camera/presentation/screens/ai_analysis_result_screen.dart';
-import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
 class AiFoodCameraScreen extends StatefulWidget {
@@ -29,6 +29,8 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   @override
   void initState() {
     super.initState();
+    
+
 
     WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
@@ -150,6 +152,54 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     }
   }
 
+  Future<void> _pickFromGalleryAndAnalyze() async {
+    final provider = context.read<NutritionProvider>();
+    if (provider.isLoading) return;
+
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+      final bytes = await pickedFile.readAsBytes();
+      await provider.analyzeFoodImage(bytes, mimeType: 'image/jpeg');
+
+      if (!mounted) return;
+      if (provider.currentAiAnalysis != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => AiAnalysisResultScreen(
+              analysis: provider.currentAiAnalysis!,
+              imageBytes: bytes,
+            ),
+          ),
+        );
+      } else if (provider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('การวิเคราะห์ภาพล้มเหลว: ${provider.errorMessage}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error picking from gallery: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ไม่สามารถเลือกรูปภาพจากคลังได้: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _captureAndAnalyze() async {
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
@@ -169,370 +219,23 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     await provider.analyzeFoodImage(imageBytes);
 
     if (!mounted) return;
-    final result = provider.currentAiAnalysis;
-    if (result != null) {
-      _showAiAnalysisModal(result, imageBytes);
+    if (provider.currentAiAnalysis != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AiAnalysisResultScreen(
+            analysis: provider.currentAiAnalysis!,
+            imageBytes: imageBytes,
+          ),
+        ),
+      );
+    } else if (provider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('การวิเคราะห์ภาพล้มเหลว: ${provider.errorMessage}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  }
-
-  void _showAiAnalysisModal(NutritionAnalysisResult initialAnalysis, [List<int>? imageBytes]) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        NutritionAnalysisResult analysis = initialAnalysis;
-        bool isEditing = false;
-        bool isRecalculating = false;
-        final TextEditingController editController = TextEditingController(text: analysis.foodName);
-
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Padding(
-              // ป้องกันคีย์บอร์ดบัง UI
-              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 44,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFCBD5E1),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3E8FF),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.auto_awesome_rounded,
-                                  color: Color(0xFF7C3AED),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('ผลวิเคราะห์ Gemini AI', style: AppTypography.heading3),
-                                  Text(
-                                    'ความแม่นยำ ${(analysis.confidence * 100).toInt()}% • ตรวจจับสำเร็จ',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: const Color(0xFF10B981),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEDE9FE),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Text(
-                              analysis.healthScore,
-                              style: AppTypography.chipText.copyWith(
-                                color: const Color(0xFF7C3AED),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // --- กรอบแสดงข้อมูลอาหาร ---
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              analysis.foodName,
-                              style: AppTypography.heading2.copyWith(fontSize: 20),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'สัดส่วนประมาณ: ${analysis.estimatedPortion}',
-                              style: AppTypography.bodySmall,
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildMacroPill(
-                                  'พลังงาน',
-                                  '${analysis.calories.toInt()} kcal',
-                                  const Color(0xFFF59E0B),
-                                  const Color(0xFFFEF3C7),
-                                ),
-                                _buildMacroPill(
-                                  'โปรตีน',
-                                  '${analysis.protein.toInt()}g',
-                                  const Color(0xFF7C3AED),
-                                  const Color(0xFFF3E8FF),
-                                ),
-                                _buildMacroPill(
-                                  'คาร์บ',
-                                  '${analysis.carbohydrates.toInt()}g',
-                                  const Color(0xFF0284C7),
-                                  const Color(0xFFE0F2FE),
-                                ),
-                                _buildMacroPill(
-                                  'ไขมัน',
-                                  '${analysis.fat.toInt()}g',
-                                  const Color(0xFFE11D48),
-                                  const Color(0xFFFFE4E6),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text('ส่วนผสมที่ตรวจพบ:', style: AppTypography.bodyMedium),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: analysis.detectedIngredients.map((i) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              i,
-                              style: AppTypography.chipText.copyWith(
-                                color: const Color(0xFF334155),
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // --- ระบบแก้ไขชื่ออาหาร หาก AI ทายผิด ---
-                      if (isEditing)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3E8FF),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFD8B4FE)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'พิมพ์ชื่ออาหารที่ถูกต้อง:',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: const Color(0xFF4C1D95),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: editController,
-                                decoration: InputDecoration(
-                                  hintText: 'เช่น ข้าวกะเพราหมูกรอบ',
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextButton(
-                                      onPressed: () {
-                                        setModalState(() => isEditing = false);
-                                      },
-                                      child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    flex: 2,
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF7C3AED),
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      onPressed: isRecalculating
-                                          ? null
-                                          : () async {
-                                              final correctedText = editController.text.trim();
-                                              if (correctedText.isEmpty) return;
-
-                                              setModalState(() => isRecalculating = true);
-                                              
-                                              final provider = context.read<NutritionProvider>();
-                                              final success = await provider.recalculateWithFoodCorrection(
-                                                correctedFoodName: correctedText,
-                                                imageBytes: imageBytes,
-                                              );
-
-                                              if (success && provider.currentAiAnalysis != null) {
-                                                setModalState(() {
-                                                  analysis = provider.currentAiAnalysis!;
-                                                  isEditing = false;
-                                                  isRecalculating = false;
-                                                });
-                                                
-                                                if (ctx.mounted) {
-                                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text('อัปเดตข้อมูลสารอาหารสำหรับ "$correctedText" เรียบร้อยแล้ว'),
-                                                      backgroundColor: const Color(0xFF10B981),
-                                                    ),
-                                                  );
-                                                }
-                                              } else {
-                                                setModalState(() => isRecalculating = false);
-                                              }
-                                            },
-                                      child: isRecalculating
-                                          ? const SizedBox(
-                                              width: 16, height: 16,
-                                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                            )
-                                          : const Text('คำนวณใหม่'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: GestureDetector(
-                              onTap: () {
-                                setModalState(() {
-                                  isEditing = true;
-                                  editController.text = analysis.foodName;
-                                });
-                              },
-                              child: Text(
-                                'ไม่ใช่เมนูนี้? แตะเพื่อแก้ไขชื่ออาหาร',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: const Color(0xFF7C3AED),
-                                  decoration: TextDecoration.underline,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C3AED),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.of(ctx).pop();
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => AiAnalysisResultScreen(
-                                  analysis: analysis,
-                                  imageBytes: imageBytes,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'ดูข้อมูลโภชนาการฉบับเต็ม',
-                            style: AppTypography.buttonText,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildMacroPill(String label, String value, Color color, Color bg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTypography.heading3.copyWith(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showGeminiApiKeyDialog() async {
@@ -822,7 +525,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       children: [
                         // Left: Gallery button "คลังภาพ"
                         GestureDetector(
-                          onTap: _captureAndAnalyze,
+                          onTap: _pickFromGalleryAndAnalyze,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -935,6 +638,63 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       ],
                     ),
                   ),
+
+                  // Overlay when Gemini AI is analyzing
+                  if (nutritionProvider.isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E1E2D),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                                  blurRadius: 16,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Color(0xFF7C3AED),
+                                  strokeWidth: 3,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Gemini AI กำลังวิเคราะห์รูปอาหาร...',
+                                  style: AppTypography.heading3.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'กำลังคำนวณแคลอรี่และสารอาหาร',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

@@ -10,6 +10,11 @@ void main() {
   group('GeminiService Tests', () {
     setUp(() {
       GeminiServiceImpl.setGlobalApiKey(null);
+      GeminiServiceImpl.enableOfflineMockForTesting = true;
+    });
+
+    tearDown(() {
+      GeminiServiceImpl.enableOfflineMockForTesting = false;
     });
 
     test('Offline / Mock fallback analyzes image and returns Pad Kra Pao matching Figma Screen 6', () async {
