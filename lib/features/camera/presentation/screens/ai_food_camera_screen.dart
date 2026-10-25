@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +47,15 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       _isCameraInitialized = _cameraController!.value.isInitialized;
     } else {
       _initCamera();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isCameraInitialized) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted && !_isCameraInitialized) {
+              _initCamera();
+            }
+          });
+        }
+      });
     }
   }
 
@@ -66,18 +76,34 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
   Future<void> _initCamera() async {
     if (_isInitializing) return;
-    _isInitializing = true;
+    if (mounted) {
+      setState(() => _isInitializing = true);
+    }
     try {
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
-        final backCamera = _cameras!.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.back,
-          orElse: () => _cameras!.first,
-        );
-        await _setupController(backCamera);
+        CameraDescription selectedCamera;
+        if (kIsWeb) {
+          // On Web/PC Chrome, use first available camera (webcam)
+          selectedCamera = _cameras!.first;
+        } else {
+          selectedCamera = _cameras!.firstWhere(
+            (c) => c.lensDirection == CameraLensDirection.back,
+            orElse: () => _cameras!.first,
+          );
+        }
+        await _setupController(selectedCamera);
+      } else {
+        debugPrint('No cameras found on device');
+        if (mounted) {
+          setState(() => _isCameraInitialized = false);
+        }
       }
     } catch (e) {
       debugPrint('Camera error: $e');
+      if (mounted) {
+        setState(() => _isCameraInitialized = false);
+      }
     } finally {
       if (mounted) {
         setState(() => _isInitializing = false);
@@ -91,9 +117,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       await prevController.dispose();
     }
 
+    final preset = kIsWeb ? ResolutionPreset.medium : ResolutionPreset.high;
     final controller = CameraController(
       cameraDescription,
-      ResolutionPreset.high,
+      preset,
       enableAudio: false,
     );
     _cameraController = controller;
@@ -106,11 +133,27 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
         });
       }
     } catch (e) {
-      debugPrint('Error initializing camera: $e');
-      if (mounted) {
-        setState(() {
-          _isCameraInitialized = false;
-        });
+      debugPrint('Error initializing camera with preset $preset: $e');
+      try {
+        final fallbackController = CameraController(
+          cameraDescription,
+          ResolutionPreset.low,
+          enableAudio: false,
+        );
+        _cameraController = fallbackController;
+        await fallbackController.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      } catch (e2) {
+        debugPrint('Fallback camera init failed: $e2');
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = false;
+          });
+        }
       }
     }
   }
@@ -774,6 +817,19 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     if (_isCameraInitialized &&
         _cameraController != null &&
         _cameraController!.value.isInitialized) {
+      final size = _cameraController!.value.previewSize;
+      final double width;
+      final double height;
+      if (kIsWeb || (size != null && size.width > size.height)) {
+        // Landscape (Desktop/Web webcam)
+        width = size?.width ?? 640;
+        height = size?.height ?? 480;
+      } else {
+        // Mobile portrait (vertical rotated)
+        width = size?.height ?? 1;
+        height = size?.width ?? 1;
+      }
+
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         clipBehavior: Clip.antiAlias,
@@ -784,8 +840,8 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
           child: FittedBox(
             fit: BoxFit.cover,
             child: SizedBox(
-              width: _cameraController!.value.previewSize?.height ?? 1,
-              height: _cameraController!.value.previewSize?.width ?? 1,
+              width: width,
+              height: height,
               child: CameraPreview(_cameraController!),
             ),
           ),
@@ -803,44 +859,80 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFF272733),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                  width: 1.5,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF272733),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: Color(0xFFA78BFA),
+                  size: 28,
                 ),
               ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: Color(0xFFA78BFA),
-                size: 28,
+              const SizedBox(height: 12),
+              Text(
+                'กล้อง AI พร้อมสแกนสารอาหาร',
+                style: AppTypography.chipText.copyWith(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'กล้อง AI พร้อมสแกนสารอาหาร',
-              style: AppTypography.chipText.copyWith(
-                color: Colors.white,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 4),
+              Text(
+                'เล็งกล้องไปที่อาหารในกรอบเพื่อเริ่มวิเคราะห์',
+                style: AppTypography.bodySmall.copyWith(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'เล็งกล้องไปที่อาหารในกรอบเพื่อเริ่มวิเคราะห์',
-              style: AppTypography.bodySmall.copyWith(
-                color: const Color(0xFF94A3B8),
-                fontSize: 11,
+              const SizedBox(height: 14),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: _isInitializing ? null : _initCamera,
+                icon: _isInitializing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.videocam_rounded, size: 18),
+                label: Text(
+                  _isInitializing ? 'กำลังเปิดกล้อง...' : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
+                  style: AppTypography.buttonText.copyWith(fontSize: 13),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                kIsWeb
+                    ? '* สำหรับเบราว์เซอร์: กรุณากด "Allow" สิทธิ์กล้องที่มุมซ้ายบนของ Chrome'
+                    : 'หากกล้องไม่เปิด กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในมือถือ',
+                style: AppTypography.bodySmall.copyWith(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 10.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
