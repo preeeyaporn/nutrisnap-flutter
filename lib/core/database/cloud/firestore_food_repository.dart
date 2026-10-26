@@ -7,7 +7,8 @@ import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/domain/repositories/food_repository.dart';
 
 /// Cloud Firestore Repository Implementation for NutriSnap.
-/// Manages cloud sync, remote backup of food logs, and inaccurate data reports.
+/// Manages live cloud sync, remote backup of food logs, and inaccurate data reports
+/// to Google Cloud Firestore, with seamless offline/testing fallback.
 class FirestoreFoodRepository implements FoodRepository {
   String userId;
   String? userEmail;
@@ -19,6 +20,9 @@ class FirestoreFoodRepository implements FoodRepository {
 
   FirestoreFoodRepository({required this.userId, FirebaseFirestore? firestore})
       : _customFirestore = firestore;
+
+  List<Map<String, dynamic>> get submittedReports =>
+      List.unmodifiable(_reportsStore);
 
   void updateUserId(String newUserId) {
     if (newUserId.isNotEmpty) {
@@ -86,14 +90,44 @@ class FirestoreFoodRepository implements FoodRepository {
     return _userDoc?.collection(ApiConstants.firestoreFoodLogsCollection);
   }
 
-  List<Map<String, dynamic>> get submittedReports =>
-      List.unmodifiable(_reportsStore);
+  /// บันทึกรายงานข้อมูลโภชนาการไม่ตรงกับบรรจุภัณฑ์จริงขึ้น Cloud / Backend
+  Future<Result<void>> submitDataReport(Map<String, dynamic> reportPayload) async {
+    try {
+      final payload = {
+        ...reportPayload,
+        'userId': userId,
+        'reportedAt': DateTime.now().toIso8601String(),
+      };
+      _reportsStore.add(payload);
+
+      final fs = firestoreInstance;
+      if (fs != null) {
+        await fs.collection('nutrition_data_reports').add(payload);
+      } else {
+        await Future.delayed(const Duration(milliseconds: 80));
+      }
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure('ส่งรายงานข้อมูลไม่ถูกต้องล้มเหลว: $e');
+    }
+  }
 
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      _cloudStore[item.id] = {
+      final col = _collection;
+      final uDoc = _userDoc;
+      if (uDoc != null) {
+        uDoc.set({
+          'userId': userId,
+          if (userEmail != null) 'email': userEmail,
+          if (userDisplayName != null) 'displayName': userDisplayName,
+          if (userDailyTarget != null) 'dailyCalorieTarget': userDailyTarget,
+          'lastActiveAt': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true)).ignore();
+      }
+
+      final data = {
         ...item.toMap(),
         '_updatedAt': DateTime.now().toIso8601String(),
       };
@@ -111,28 +145,20 @@ class FirestoreFoodRepository implements FoodRepository {
     }
   }
 
-  /// บันทึกรายงานข้อมูลโภชนาการไม่ตรงกับบรรจุภัณฑ์จริงขึ้น Cloud / Backend
-  Future<Result<void>> submitDataReport(Map<String, dynamic> reportPayload) async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      _reportsStore.add({
-        ...reportPayload,
-        'userId': userId,
-        'reportedAt': DateTime.now().toIso8601String(),
-      });
-      return Result.success(null);
-    } catch (e) {
-      return Result.failure('ส่งรายงานข้อมูลไม่ถูกต้องล้มเหลว: $e');
-    }
-  }
-
   @override
   Future<Result<FoodItem?>> getFoodItemById(String id) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 80));
-      final data = _cloudStore[id];
-      if (data == null) return Result.success(null);
-      return Result.success(FoodItem.fromMap(data));
+      final col = _collection;
+      if (col != null) {
+        final doc = await col.doc(id).get();
+        if (!doc.exists || doc.data() == null) return Result.success(null);
+        return Result.success(FoodItem.fromMap(doc.data()!));
+      } else {
+        await Future.delayed(const Duration(milliseconds: 80));
+        final data = _cloudStore[id];
+        if (data == null) return Result.success(null);
+        return Result.success(FoodItem.fromMap(data));
+      }
     } catch (e) {
       return Result.failure('ดึงข้อมูลจาก Firestore ล้มเหลว: $e');
     }
@@ -141,10 +167,17 @@ class FirestoreFoodRepository implements FoodRepository {
   @override
   Future<Result<FoodItem?>> getFoodItemByBarcode(String barcode) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 80));
-      for (final map in _cloudStore.values) {
-        if (map['barcode'] == barcode) {
-          return Result.success(FoodItem.fromMap(map));
+      final col = _collection;
+      if (col != null) {
+        final query = await col.where('barcode', isEqualTo: barcode).limit(1).get();
+        if (query.docs.isEmpty) return Result.success(null);
+        return Result.success(FoodItem.fromMap(query.docs.first.data()));
+      } else {
+        await Future.delayed(const Duration(milliseconds: 80));
+        for (final map in _cloudStore.values) {
+          if (map['barcode'] == barcode) {
+            return Result.success(FoodItem.fromMap(map));
+          }
         }
         return Result.success(null);
       }
@@ -156,12 +189,22 @@ class FirestoreFoodRepository implements FoodRepository {
   @override
   Future<Result<List<FoodItem>>> getAllFoodItems() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
-      final items = _cloudStore.values
-          .map((m) => FoodItem.fromMap(m))
-          .toList();
-      items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
-      return Result.success(items);
+      final col = _collection;
+      if (col != null) {
+        final query = await col.get();
+        final items = query.docs
+            .map((doc) => FoodItem.fromMap(doc.data()))
+            .toList();
+        items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+        return Result.success(items);
+      } else {
+        await Future.delayed(const Duration(milliseconds: 100));
+        final items = _cloudStore.values
+            .map((m) => FoodItem.fromMap(m))
+            .toList();
+        items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+        return Result.success(items);
+      }
     } catch (e) {
       return Result.failure('ดึงข้อมูลทั้งหมดจาก Firestore ล้มเหลว: $e');
     }
@@ -179,8 +222,13 @@ class FirestoreFoodRepository implements FoodRepository {
   @override
   Future<Result<void>> deleteFoodItem(String id) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 80));
-      _cloudStore.remove(id);
+      final col = _collection;
+      if (col != null) {
+        await col.doc(id).delete();
+      } else {
+        await Future.delayed(const Duration(milliseconds: 80));
+        _cloudStore.remove(id);
+      }
       return Result.success(null);
     } catch (e) {
       return Result.failure('ลบรายการบน Firestore ล้มเหลว: $e');

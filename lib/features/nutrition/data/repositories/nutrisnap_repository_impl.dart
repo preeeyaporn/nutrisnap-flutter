@@ -29,6 +29,32 @@ class NutriSnapRepositoryImpl implements FoodRepository {
   List<Map<String, dynamic>> get localReportsLog =>
       List.unmodifiable(_localReportsLog);
 
+  GeminiService get geminiService => _geminiService;
+
+  void updateUserId(String newUserId) {
+    final cloud = cloudRepository;
+    if (cloud is FirestoreFoodRepository) {
+      cloud.updateUserId(newUserId);
+    }
+  }
+
+  void updateUserInfo({
+    required String newUserId,
+    String? email,
+    String? displayName,
+    double? dailyTarget,
+  }) {
+    final cloud = cloudRepository;
+    if (cloud is FirestoreFoodRepository) {
+      cloud.updateUserInfo(
+        newUserId: newUserId,
+        email: email,
+        displayName: displayName,
+        dailyTarget: dailyTarget,
+      );
+    }
+  }
+
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
     // 1. Save to local database (Hive)
@@ -234,6 +260,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
           final upgraded = verified.copyWith(
             id: item.id,
             isFavorite: item.isFavorite,
+            isSynced: item.isSynced,
             scannedAt: item.scannedAt,
           );
           await _localRepository.saveFoodItem(upgraded);
@@ -303,8 +330,6 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     final localItemsResult = await _localRepository.getAllFoodItems();
     var items = localItemsResult.dataOrNull ?? [];
 
-    // If local database is empty, seed initial sample meals into Hive first
-    // so there is actual food data to sync up to Firestore!
     if (items.isEmpty) {
       final initialDemos = [
         FoodItem(
@@ -315,7 +340,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
           carbohydrates: 65,
           fat: 20,
           nutriScore: 'B',
-          imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
+          imageUrl:
+              'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
           scannedAt: DateTime.now(),
           source: 'ai_vision',
           isSynced: false,
@@ -328,7 +354,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
           carbohydrates: 32,
           fat: 4,
           nutriScore: 'A',
-          imageUrl: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
+          imageUrl:
+              'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
           scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
           source: 'barcode_scan',
           isSynced: false,
@@ -341,7 +368,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
           carbohydrates: 20,
           fat: 5,
           nutriScore: 'A',
-          imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
+          imageUrl:
+              'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
           scannedAt: DateTime.now().subtract(const Duration(days: 1)),
           source: 'barcode_scan',
           isSynced: false,
@@ -354,7 +382,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
           carbohydrates: 28,
           fat: 22,
           nutriScore: 'A',
-          imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
+          imageUrl:
+              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
           scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
           source: 'ai_vision',
           isSynced: false,

@@ -21,6 +21,7 @@ class FoodItem {
   final List<String> ingredients;
   final String source; // 'barcode_scan', 'ai_vision', 'manual'
   final bool isFavorite;
+  final bool isSynced;
   final double servingsPerContainer; // จำนวนหน่วยบริโภคต่อซอง/บรรจุภัณฑ์
   final bool isUserEdited; // ป้องกันไม่ให้ข้อมูลถูกเขียนทับอัตโนมัติเมื่อซิงค์รอบใหม่
   final bool isReported; // สถานะรายงานข้อมูลไม่ตรงกับฉลากจริง
@@ -47,6 +48,7 @@ class FoodItem {
     this.ingredients = const [],
     this.source = 'barcode_scan',
     this.isFavorite = false,
+    this.isSynced = true,
     this.servingsPerContainer = 1.0,
     this.isUserEdited = false,
     this.isReported = false,
@@ -74,6 +76,7 @@ class FoodItem {
     List<String>? ingredients,
     String? source,
     bool? isFavorite,
+    bool? isSynced,
     double? servingsPerContainer,
     bool? isUserEdited,
     bool? isReported,
@@ -100,6 +103,7 @@ class FoodItem {
       ingredients: ingredients ?? this.ingredients,
       source: source ?? this.source,
       isFavorite: isFavorite ?? this.isFavorite,
+      isSynced: isSynced ?? this.isSynced,
       servingsPerContainer: servingsPerContainer ?? this.servingsPerContainer,
       isUserEdited: isUserEdited ?? this.isUserEdited,
       isReported: isReported ?? this.isReported,
@@ -129,6 +133,7 @@ class FoodItem {
       'ingredients': ingredients,
       'source': source,
       'isFavorite': isFavorite,
+      'isSynced': isSynced,
       'servingsPerContainer': servingsPerContainer,
       'is_user_edited': isUserEdited,
       'isUserEdited': isUserEdited,
@@ -158,13 +163,13 @@ class FoodItem {
       scannedAt: map['scannedAt'] != null
           ? DateTime.tryParse(map['scannedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      ingredients:
-          (map['ingredients'] as List<dynamic>?)
+      ingredients: (map['ingredients'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
       source: map['source']?.toString() ?? 'barcode_scan',
       isFavorite: map['isFavorite'] == true,
+      isSynced: map['isSynced'] != false,
       servingsPerContainer:
           (map['servingsPerContainer'] as num?)?.toDouble() ?? 1.0,
       isUserEdited:
