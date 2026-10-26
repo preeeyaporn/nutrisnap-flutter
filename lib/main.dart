@@ -56,10 +56,7 @@ void main() async {
   );
 
   runApp(
-    NutriSnapApp(
-      authService: authService,
-      repository: nutrisnapRepository,
-    ),
+    NutriSnapApp(authService: authService, repository: nutrisnapRepository),
   );
 }
 
@@ -67,11 +64,7 @@ class NutriSnapApp extends StatelessWidget {
   final FirebaseAuthService? authService;
   final NutriSnapRepositoryImpl? repository;
 
-  const NutriSnapApp({
-    super.key,
-    this.authService,
-    this.repository,
-  });
+  const NutriSnapApp({super.key, this.authService, this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +136,9 @@ class NutriSnapApp extends StatelessWidget {
                             offset: const Offset(0, 15),
                           ),
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                            color: const Color(
+                              0xFF7C3AED,
+                            ).withValues(alpha: 0.25),
                             blurRadius: 60,
                             spreadRadius: 10,
                           ),

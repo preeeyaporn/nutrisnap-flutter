@@ -11,12 +11,15 @@ void main() {
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
-      child: const MaterialApp(
-        home: BarcodeScannerScreen(),
-      ),
+      child: const MaterialApp(home: BarcodeScannerScreen()),
     );
   }
 
@@ -49,10 +52,15 @@ void main() {
       expect(find.text('ดูข้อมูลโภชนาการฉบับเต็ม'), findsOneWidget);
 
       // Tip banner
-      expect(find.textContaining('คำแนะนำ: ถือกล้องนิ่งห่างประมาณ 10–15 ซม.'), findsOneWidget);
+      expect(
+        find.textContaining('คำแนะนำ: ถือกล้องนิ่งห่างประมาณ 10–15 ซม.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('tapping manual barcode button opens input dialog', (tester) async {
+    testWidgets('tapping manual barcode button opens input dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

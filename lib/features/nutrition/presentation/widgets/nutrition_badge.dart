@@ -2,14 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 
-enum NutrientType {
-  calories,
-  protein,
-  carbs,
-  fat,
-  sugar,
-  fiber,
-}
+enum NutrientType { calories, protein, carbs, fat, sugar, fiber }
 
 class NutritionBadge extends StatelessWidget {
   final String label;
@@ -46,10 +39,7 @@ class NutritionBadge extends StatelessWidget {
           Container(
             width: 7,
             height: 7,
-            decoration: BoxDecoration(
-              color: textColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: textColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(

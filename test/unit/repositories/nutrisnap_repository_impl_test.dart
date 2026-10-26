@@ -9,7 +9,9 @@ import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_re
 import 'package:nutrisnap/features/nutrition/domain/repositories/food_repository.dart';
 
 class MockFoodRepository extends Mock implements FoodRepository {}
+
 class MockOpenFoodFactsService extends Mock implements OpenFoodFactsService {}
+
 class MockGeminiService extends Mock implements GeminiService {}
 
 void main() {
@@ -50,43 +52,56 @@ void main() {
     });
 
     test('saveFoodItem saves to local and triggers cloud sync', () async {
-      when(() => mockLocal.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
-      when(() => mockCloud.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
+      when(
+        () => mockLocal.saveFoodItem(any()),
+      ).thenAnswer((_) async => const Result.success(null));
+      when(
+        () => mockCloud.saveFoodItem(any()),
+      ).thenAnswer((_) async => const Result.success(null));
 
       final result = await repository.saveFoodItem(sampleFood);
       expect(result.isSuccess, isTrue);
       verify(() => mockLocal.saveFoodItem(sampleFood)).called(1);
     });
 
-    test('getFoodItemByBarcode returns cached item when present locally', () async {
-      when(() => mockLocal.getFoodItemByBarcode('8850188800123'))
-          .thenAnswer((_) async => Result.success(sampleFood));
+    test(
+      'getFoodItemByBarcode returns cached item when present locally',
+      () async {
+        when(
+          () => mockLocal.getFoodItemByBarcode('8850188800123'),
+        ).thenAnswer((_) async => Result.success(sampleFood));
 
-      final result = await repository.getFoodItemByBarcode('8850188800123');
+        final result = await repository.getFoodItemByBarcode('8850188800123');
 
-      expect(result.isSuccess, isTrue);
-      expect(result.dataOrNull?.name, 'น้ำมะพร้าว');
-      verifyNever(() => mockOff.getProductByBarcode(any()));
-    });
+        expect(result.isSuccess, isTrue);
+        expect(result.dataOrNull?.name, 'น้ำมะพร้าว');
+        verifyNever(() => mockOff.getProductByBarcode(any()));
+      },
+    );
 
-    test('getFoodItemByBarcode fetches from Open Food Facts when cache misses', () async {
-      when(() => mockLocal.getFoodItemByBarcode('8850188800123'))
-          .thenAnswer((_) async => const Result.success(null));
-      when(() => mockOff.getProductByBarcode('8850188800123'))
-          .thenAnswer((_) async => Result.success(sampleFood));
-      when(() => mockLocal.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
-      when(() => mockCloud.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
+    test(
+      'getFoodItemByBarcode fetches from Open Food Facts when cache misses',
+      () async {
+        when(
+          () => mockLocal.getFoodItemByBarcode('8850188800123'),
+        ).thenAnswer((_) async => const Result.success(null));
+        when(
+          () => mockOff.getProductByBarcode('8850188800123'),
+        ).thenAnswer((_) async => Result.success(sampleFood));
+        when(
+          () => mockLocal.saveFoodItem(any()),
+        ).thenAnswer((_) async => const Result.success(null));
+        when(
+          () => mockCloud.saveFoodItem(any()),
+        ).thenAnswer((_) async => const Result.success(null));
 
-      final result = await repository.getFoodItemByBarcode('8850188800123');
+        final result = await repository.getFoodItemByBarcode('8850188800123');
 
-      expect(result.isSuccess, isTrue);
-      expect(result.dataOrNull?.name, 'น้ำมะพร้าว');
-      verify(() => mockOff.getProductByBarcode('8850188800123')).called(1);
-    });
+        expect(result.isSuccess, isTrue);
+        expect(result.dataOrNull?.name, 'น้ำมะพร้าว');
+        verify(() => mockOff.getProductByBarcode('8850188800123')).called(1);
+      },
+    );
 
     test('analyzeFoodImage calls Gemini service and persists result', () async {
       final analysis = NutritionAnalysisResult(
@@ -101,16 +116,20 @@ void main() {
         analyzedAt: DateTime.now(),
       );
 
-      when(() => mockGemini.analyzeFoodImage(
-            imageBytes: any(named: 'imageBytes'),
-            mimeType: any(named: 'mimeType'),
-            userNotes: any(named: 'userNotes'),
-          )).thenAnswer((_) async => Result.success(analysis));
+      when(
+        () => mockGemini.analyzeFoodImage(
+          imageBytes: any(named: 'imageBytes'),
+          mimeType: any(named: 'mimeType'),
+          userNotes: any(named: 'userNotes'),
+        ),
+      ).thenAnswer((_) async => Result.success(analysis));
 
-      when(() => mockLocal.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
-      when(() => mockCloud.saveFoodItem(any()))
-          .thenAnswer((_) async => const Result.success(null));
+      when(
+        () => mockLocal.saveFoodItem(any()),
+      ).thenAnswer((_) async => const Result.success(null));
+      when(
+        () => mockCloud.saveFoodItem(any()),
+      ).thenAnswer((_) async => const Result.success(null));
 
       final result = await repository.analyzeFoodImage(imageBytes: [1, 2, 3]);
 

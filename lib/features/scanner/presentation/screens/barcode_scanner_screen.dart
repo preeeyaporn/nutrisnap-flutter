@@ -30,7 +30,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   void initState() {
     super.initState();
     _isCustomController = widget.controller != null;
-    _scannerController = widget.controller ??
+    _scannerController =
+        widget.controller ??
         MobileScannerController(
           detectionSpeed: DetectionSpeed.normal,
           facing: CameraFacing.back,
@@ -105,7 +106,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -119,7 +123,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               final code = controller.text.trim();
@@ -129,7 +135,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
               }
               Navigator.of(ctx).pop();
             },
-            child: Text('ค้นหา', style: AppTypography.buttonText.copyWith(fontSize: 14)),
+            child: Text(
+              'ค้นหา',
+              style: AppTypography.buttonText.copyWith(fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -152,23 +161,40 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('• จัดบาร์โค้ดให้อยู่ในกรอบแสงสีม่วง', style: AppTypography.bodyMedium),
+            Text(
+              '• จัดบาร์โค้ดให้อยู่ในกรอบแสงสีม่วง',
+              style: AppTypography.bodyMedium,
+            ),
             const SizedBox(height: 6),
-            Text('• ถือกล้องนิ่งห่างประมาณ 10-15 ซม.', style: AppTypography.bodyMedium),
+            Text(
+              '• ถือกล้องนิ่งห่างประมาณ 10-15 ซม.',
+              style: AppTypography.bodyMedium,
+            ),
             const SizedBox(height: 6),
-            Text('• หากแสงไม่พอ ให้เปิดไฟฉายที่มุมขวาบน', style: AppTypography.bodyMedium),
+            Text(
+              '• หากแสงไม่พอ ให้เปิดไฟฉายที่มุมขวาบน',
+              style: AppTypography.bodyMedium,
+            ),
             const SizedBox(height: 6),
-            Text('• สามารถอัปโหลดรูปภาพบาร์โค้ดจากคลังภาพได้', style: AppTypography.bodyMedium),
+            Text(
+              '• สามารถอัปโหลดรูปภาพบาร์โค้ดจากคลังภาพได้',
+              style: AppTypography.bodyMedium,
+            ),
           ],
         ),
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('เข้าใจแล้ว', style: AppTypography.buttonText.copyWith(fontSize: 14)),
+            child: Text(
+              'เข้าใจแล้ว',
+              style: AppTypography.buttonText.copyWith(fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -204,7 +230,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   Expanded(
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(20),
@@ -242,7 +271,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   const SizedBox(width: 8),
                   // Flashlight toggle
                   _buildCircularButton(
-                    icon: _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                    icon: _isFlashOn
+                        ? Icons.flash_on_rounded
+                        : Icons.flash_off_rounded,
                     color: _isFlashOn ? Colors.amber : Colors.white,
                     onTap: _toggleFlash,
                   ),
@@ -338,7 +369,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                                   color: const Color(0xFFA78BFA),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.9),
+                                      color: const Color(
+                                        0xFF8B5CF6,
+                                      ).withValues(alpha: 0.9),
                                       blurRadius: 10,
                                       spreadRadius: 2,
                                     ),
@@ -356,7 +389,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   Positioned(
                     top: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.70),
                         borderRadius: BorderRadius.circular(20),
@@ -373,7 +409,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.crop_free_rounded, color: Colors.white70, size: 14),
+                          const Icon(
+                            Icons.crop_free_rounded,
+                            color: Colors.white70,
+                            size: 14,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'จัดบาร์โค้ดให้อยู่ในกรอบ',
@@ -397,9 +437,14 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       children: [
                         // Live Search Status Card
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF272733).withValues(alpha: 0.92),
+                            color: const Color(
+                              0xFF272733,
+                            ).withValues(alpha: 0.92),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.08),
@@ -450,11 +495,20 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                                 ),
                               ),
                               IconButton(
-                                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                constraints: const BoxConstraints(
+                                  minWidth: 28,
+                                  minHeight: 28,
+                                ),
                                 padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.sync_rounded, color: Colors.white70, size: 18),
+                                icon: const Icon(
+                                  Icons.sync_rounded,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
                                 onPressed: () {
-                                  context.read<NutritionProvider>().scanBarcode(_currentBarcode);
+                                  context.read<NutritionProvider>().scanBarcode(
+                                    _currentBarcode,
+                                  );
                                 },
                               ),
                             ],
@@ -473,11 +527,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                                 onTap: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('กำลังสแกนรูปภาพจากคลังรูป...'),
+                                      content: Text(
+                                        'กำลังสแกนรูปภาพจากคลังรูป...',
+                                      ),
                                       duration: Duration(seconds: 1),
                                     ),
                                   );
-                                  context.read<NutritionProvider>().scanBarcode(_currentBarcode);
+                                  context.read<NutritionProvider>().scanBarcode(
+                                    _currentBarcode,
+                                  );
                                 },
                               ),
                             ),
@@ -540,7 +598,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(12),
@@ -563,7 +624,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F3FF),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFDDD6FE), width: 1),
+                      border: Border.all(
+                        color: const Color(0xFFDDD6FE),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -654,7 +718,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEDE9FE),
                           borderRadius: BorderRadius.circular(12),
@@ -683,7 +750,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                         borderRadius: BorderRadius.circular(25),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFF7C3AED,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 5),
                           ),
@@ -691,7 +760,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       ),
                       child: ElevatedButton(
                         onPressed: () {
-                          final item = scannedItem ??
+                          final item =
+                              scannedItem ??
                               FoodItem(
                                 id: 'item_sample',
                                 barcode: _currentBarcode,
@@ -708,7 +778,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                               );
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => NutritionDetailScreen(item: item),
+                              builder: (context) =>
+                                  NutritionDetailScreen(item: item),
                             ),
                           );
                         },
@@ -748,7 +819,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                   if (_showTip) ...[
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3E8FF),
                         borderRadius: BorderRadius.circular(14),
@@ -875,7 +949,11 @@ class _ScannerFramePainter extends CustomPainter {
     canvas.drawLine(const Offset(8, 0), const Offset(corner, 0), paint);
 
     // Top-right
-    canvas.drawLine(Offset(size.width - corner, 0), Offset(size.width - 8, 0), paint);
+    canvas.drawLine(
+      Offset(size.width - corner, 0),
+      Offset(size.width - 8, 0),
+      paint,
+    );
     canvas.drawArc(
       Rect.fromLTWH(size.width - 16, 0, 16, 16),
       4.71238,
@@ -886,7 +964,11 @@ class _ScannerFramePainter extends CustomPainter {
     canvas.drawLine(Offset(size.width, 8), Offset(size.width, corner), paint);
 
     // Bottom-left
-    canvas.drawLine(Offset(0, size.height - corner), Offset(0, size.height - 8), paint);
+    canvas.drawLine(
+      Offset(0, size.height - corner),
+      Offset(0, size.height - 8),
+      paint,
+    );
     canvas.drawArc(
       Rect.fromLTWH(0, size.height - 16, 16, 16),
       1.57079,

@@ -20,9 +20,10 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     this.cloudRepository,
     OpenFoodFactsService? openFoodFactsService,
     GeminiService? geminiService,
-  })  : _localRepository = localRepository ?? HiveFoodRepository(),
-        _openFoodFactsService = openFoodFactsService ?? OpenFoodFactsServiceImpl(),
-        _geminiService = geminiService ?? GeminiServiceImpl();
+  }) : _localRepository = localRepository ?? HiveFoodRepository(),
+       _openFoodFactsService =
+           openFoodFactsService ?? OpenFoodFactsServiceImpl(),
+       _geminiService = geminiService ?? GeminiServiceImpl();
 
   void updateUserId(String newUserId) {
     final cloud = cloudRepository;
@@ -94,7 +95,9 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     }
 
     // 2. Query Open Food Facts REST API
-    final remoteResult = await _openFoodFactsService.getProductByBarcode(barcode);
+    final remoteResult = await _openFoodFactsService.getProductByBarcode(
+      barcode,
+    );
     return remoteResult.when(
       success: (product) async {
         // Cache to local Hive and sync to Firestore

@@ -26,8 +26,9 @@ void main() {
 
     setUp(() {
       mockRepo = MockNutriSnapRepository();
-      when(() => mockRepo.getRecentScans(limit: any(named: 'limit')))
-          .thenAnswer((_) async => Result.success([sampleFood]));
+      when(
+        () => mockRepo.getRecentScans(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => Result.success([sampleFood]));
 
       provider = NutritionProvider(repository: mockRepo);
     });
@@ -39,8 +40,9 @@ void main() {
     });
 
     test('scanBarcode sets currentProduct on success', () async {
-      when(() => mockRepo.getFoodItemByBarcode('8850188800123'))
-          .thenAnswer((_) async => Result.success(sampleFood));
+      when(
+        () => mockRepo.getFoodItemByBarcode('8850188800123'),
+      ).thenAnswer((_) async => Result.success(sampleFood));
 
       final success = await provider.scanBarcode('8850188800123');
 
@@ -50,8 +52,9 @@ void main() {
     });
 
     test('scanBarcode handles failure and sets error status', () async {
-      when(() => mockRepo.getFoodItemByBarcode('999'))
-          .thenAnswer((_) async => const Result.failure('ไม่พบข้อมูล'));
+      when(
+        () => mockRepo.getFoodItemByBarcode('999'),
+      ).thenAnswer((_) async => const Result.failure('ไม่พบข้อมูล'));
 
       final success = await provider.scanBarcode('999');
 
@@ -73,10 +76,12 @@ void main() {
         analyzedAt: DateTime.now(),
       );
 
-      when(() => mockRepo.analyzeFoodImage(
-            imageBytes: any(named: 'imageBytes'),
-            userNotes: any(named: 'userNotes'),
-          )).thenAnswer((_) async => Result.success(analysis));
+      when(
+        () => mockRepo.analyzeFoodImage(
+          imageBytes: any(named: 'imageBytes'),
+          userNotes: any(named: 'userNotes'),
+        ),
+      ).thenAnswer((_) async => Result.success(analysis));
 
       final ok = await provider.analyzeFoodImage([1, 2, 3]);
 

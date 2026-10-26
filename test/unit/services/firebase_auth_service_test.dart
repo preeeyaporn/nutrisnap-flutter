@@ -17,31 +17,37 @@ void main() {
       expect(authService.currentUser, isNull);
     });
 
-    test('signInWithEmailAndPassword succeeds with valid email & password', () async {
-      final result = await authService.signInWithEmailAndPassword(
-        'test@nutrisnap.com',
-        'password123',
-      );
+    test(
+      'signInWithEmailAndPassword succeeds with valid email & password',
+      () async {
+        final result = await authService.signInWithEmailAndPassword(
+          'test@nutrisnap.com',
+          'password123',
+        );
 
-      expect(result.isSuccess, isTrue);
-      expect(authService.currentUser, isNotNull);
-      expect(authService.currentUser?.email, 'test@nutrisnap.com');
-      expect(authService.currentUser?.displayName, 'test');
-    });
+        expect(result.isSuccess, isTrue);
+        expect(authService.currentUser, isNotNull);
+        expect(authService.currentUser?.email, 'test@nutrisnap.com');
+        expect(authService.currentUser?.displayName, 'test');
+      },
+    );
 
-    test('signInWithEmailAndPassword fails with invalid email or short password', () async {
-      final invalidEmail = await authService.signInWithEmailAndPassword(
-        'invalid_email',
-        'password123',
-      );
-      expect(invalidEmail.isFailure, isTrue);
+    test(
+      'signInWithEmailAndPassword fails with invalid email or short password',
+      () async {
+        final invalidEmail = await authService.signInWithEmailAndPassword(
+          'invalid_email',
+          'password123',
+        );
+        expect(invalidEmail.isFailure, isTrue);
 
-      final shortPassword = await authService.signInWithEmailAndPassword(
-        'valid@test.com',
-        '123',
-      );
-      expect(shortPassword.isFailure, isTrue);
-    });
+        final shortPassword = await authService.signInWithEmailAndPassword(
+          'valid@test.com',
+          '123',
+        );
+        expect(shortPassword.isFailure, isTrue);
+      },
+    );
 
     test('signUpWithEmailAndPassword creates new user', () async {
       final result = await authService.signUpWithEmailAndPassword(
@@ -72,7 +78,10 @@ void main() {
     });
 
     test('updateProfile updates user target and info', () async {
-      await authService.signInWithEmailAndPassword('user@nutri.com', 'password123');
+      await authService.signInWithEmailAndPassword(
+        'user@nutri.com',
+        'password123',
+      );
 
       final updateRes = await authService.updateProfile(
         displayName: 'Updated Name',
@@ -89,41 +98,50 @@ void main() {
       expect(result.isFailure, isTrue);
     });
 
-    test('signInWithEmailAndPassword retrieves original registered name for returning user', () async {
-      final signUpRes = await authService.signUpWithEmailAndPassword(
-        'registered_user@nutrisnap.com',
-        'password123',
-        displayName: 'ปรียาภรณ์ แสนดี',
-      );
-      expect(signUpRes.isSuccess, isTrue);
+    test(
+      'signInWithEmailAndPassword retrieves original registered name for returning user',
+      () async {
+        final signUpRes = await authService.signUpWithEmailAndPassword(
+          'registered_user@nutrisnap.com',
+          'password123',
+          displayName: 'ปรียาภรณ์ แสนดี',
+        );
+        expect(signUpRes.isSuccess, isTrue);
 
-      await authService.signOut();
-      expect(authService.currentUser, isNull);
+        await authService.signOut();
+        expect(authService.currentUser, isNull);
 
-      final signInRes = await authService.signInWithEmailAndPassword(
-        'registered_user@nutrisnap.com',
-        'password123',
-      );
-      expect(signInRes.isSuccess, isTrue);
-      expect(authService.currentUser?.displayName, 'ปรียาภรณ์ แสนดี');
-    });
+        final signInRes = await authService.signInWithEmailAndPassword(
+          'registered_user@nutrisnap.com',
+          'password123',
+        );
+        expect(signInRes.isSuccess, isTrue);
+        expect(authService.currentUser?.displayName, 'ปรียาภรณ์ แสนดี');
+      },
+    );
 
-    test('signInWithEmailAndPassword fails when account is not registered', () async {
-      final result = await authService.signInWithEmailAndPassword(
-        'not_registered@nutrisnap.com',
-        'password123',
-      );
-      expect(result.isFailure, isTrue);
-      expect(result.errorOrNull, contains('ไม่พบบัญชีผู้ใช้นี้ในระบบ'));
-    });
+    test(
+      'signInWithEmailAndPassword fails when account is not registered',
+      () async {
+        final result = await authService.signInWithEmailAndPassword(
+          'not_registered@nutrisnap.com',
+          'password123',
+        );
+        expect(result.isFailure, isTrue);
+        expect(result.errorOrNull, contains('ไม่พบบัญชีผู้ใช้นี้ในระบบ'));
+      },
+    );
 
-    test('signInWithEmailAndPassword fails when password is incorrect', () async {
-      final result = await authService.signInWithEmailAndPassword(
-        'user@nutrisnap.com',
-        'wrongpassword999',
-      );
-      expect(result.isFailure, isTrue);
-      expect(result.errorOrNull, contains('รหัสผ่านไม่ถูกต้อง'));
-    });
+    test(
+      'signInWithEmailAndPassword fails when password is incorrect',
+      () async {
+        final result = await authService.signInWithEmailAndPassword(
+          'user@nutrisnap.com',
+          'wrongpassword999',
+        );
+        expect(result.isFailure, isTrue);
+        expect(result.errorOrNull, contains('รหัสผ่านไม่ถูกต้อง'));
+      },
+    );
   });
 }

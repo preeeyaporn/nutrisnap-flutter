@@ -9,7 +9,7 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   AuthProvider({FirebaseAuthService? authService})
-      : _authService = authService ?? FirebaseAuthServiceImpl() {
+    : _authService = authService ?? FirebaseAuthServiceImpl() {
     _init();
   }
 
@@ -31,7 +31,10 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _authService.signInWithEmailAndPassword(email, password);
+    final result = await _authService.signInWithEmailAndPassword(
+      email,
+      password,
+    );
     _isLoading = false;
 
     return result.when(

@@ -9,11 +9,22 @@ import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 abstract class FirebaseAuthService {
   Stream<UserModel?> get authStateChanges;
   UserModel? get currentUser;
-  Future<Result<UserModel>> signInWithEmailAndPassword(String email, String password);
-  Future<Result<UserModel>> signUpWithEmailAndPassword(String email, String password, {String? displayName});
+  Future<Result<UserModel>> signInWithEmailAndPassword(
+    String email,
+    String password,
+  );
+  Future<Result<UserModel>> signUpWithEmailAndPassword(
+    String email,
+    String password, {
+    String? displayName,
+  });
   Future<Result<UserModel>> signInAnonymously();
   Future<Result<void>> signOut();
-  Future<Result<UserModel>> updateProfile({String? displayName, String? photoUrl, double? dailyCalorieTarget});
+  Future<Result<UserModel>> updateProfile({
+    String? displayName,
+    String? photoUrl,
+    double? dailyCalorieTarget,
+  });
 }
 
 /// Firebase Auth implementation supporting local simulation and Cloud Firebase bridge
@@ -111,11 +122,19 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
     // 2. Persist to SharedPreferences as persistent key-value store
     try {
-      final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
-      await prefs.setString('reg_user_name_$key', user.displayName).timeout(const Duration(milliseconds: 100));
-      await prefs.setDouble('reg_user_target_$key', user.dailyCalorieTarget).timeout(const Duration(milliseconds: 100));
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(milliseconds: 100),
+      );
+      await prefs
+          .setString('reg_user_name_$key', user.displayName)
+          .timeout(const Duration(milliseconds: 100));
+      await prefs
+          .setDouble('reg_user_target_$key', user.dailyCalorieTarget)
+          .timeout(const Duration(milliseconds: 100));
       if (password != null) {
-        await prefs.setString('reg_user_password_$key', password).timeout(const Duration(milliseconds: 100));
+        await prefs
+            .setString('reg_user_password_$key', password)
+            .timeout(const Duration(milliseconds: 100));
       }
     } catch (_) {}
   }
@@ -139,7 +158,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
     // 2. Try SharedPreferences
     try {
-      final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(milliseconds: 100),
+      );
       final savedName = prefs.getString('reg_user_name_$key');
       final savedTarget = prefs.getDouble('reg_user_target_$key');
       final savedPassword = prefs.getString('reg_user_password_$key');
@@ -177,7 +198,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
     // 2. Try SharedPreferences
     try {
-      final prefs = await SharedPreferences.getInstance().timeout(const Duration(milliseconds: 100));
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(milliseconds: 100),
+      );
       final savedPwd = prefs.getString('reg_user_password_$key');
       if (savedPwd != null && savedPwd.isNotEmpty) {
         return savedPwd;
@@ -214,7 +237,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
     // 3. Block login if user is not registered in the system
     if (user == null) {
-      return Result.failure('ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ');
+      return Result.failure(
+        'ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ',
+      );
     }
 
     // 4. Verify password
@@ -252,7 +277,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
     final chosenName = (displayName != null && displayName.trim().isNotEmpty)
         ? displayName.trim()
-        : (normalizedEmail == 'user@nutrisnap.com' ? 'ปรียาภรณ์' : email.split('@').first);
+        : (normalizedEmail == 'user@nutrisnap.com'
+              ? 'ปรียาภรณ์'
+              : email.split('@').first);
 
     final user = UserModel(
       id: 'usr_${normalizedEmail.replaceAll('@', '_').replaceAll('.', '_')}',

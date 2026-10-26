@@ -11,12 +11,15 @@ void main() {
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
-      child: const MaterialApp(
-        home: OnboardingScreen(),
-      ),
+      child: const MaterialApp(home: OnboardingScreen()),
     );
   }
 
@@ -64,7 +67,10 @@ void main() {
 
       // Should land on LoginScreen
       expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
-      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
+      expect(
+        find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
+        findsOneWidget,
+      );
     });
   });
 }

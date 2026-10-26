@@ -27,12 +27,15 @@ void main() {
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
-      child: MaterialApp(
-        home: NutritionDetailScreen(item: testItem),
-      ),
+      child: MaterialApp(home: NutritionDetailScreen(item: testItem)),
     );
   }
 
@@ -71,7 +74,12 @@ void main() {
       await tester.tap(buttonFinder);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('บันทึก "น้ำมะพร้าวสดออร์แกนิก 100%" ในบันทึกอาหารแล้ว'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'บันทึก "น้ำมะพร้าวสดออร์แกนิก 100%" ในบันทึกอาหารแล้ว',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

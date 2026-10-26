@@ -22,7 +22,7 @@ class NutritionProvider extends ChangeNotifier {
   bool _isOnline = true;
 
   NutritionProvider({NutriSnapRepositoryImpl? repository})
-      : _repository = repository ?? NutriSnapRepositoryImpl() {
+    : _repository = repository ?? NutriSnapRepositoryImpl() {
     loadRecentScans();
   }
 
@@ -243,7 +243,10 @@ class NutritionProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final bytes = imageBytes ?? _lastCapturedImageBytes ?? List<int>.generate(100, (i) => i);
+    final bytes =
+        imageBytes ??
+        _lastCapturedImageBytes ??
+        List<int>.generate(100, (i) => i);
     final prompt =
         'ผู้ใช้ระบุว่าอาหารในภาพนี้คือ "$correctedFoodName" (ไม่ใช่ที่ตรวจจับได้ก่อนหน้า) กรุณาวิเคราะห์ภาพร่วมกับชื่ออาหาร "$correctedFoodName" และคำนวณคุณค่าทางโภชนาการ สัดส่วน แคลอรี่ โปรตีน คาร์โบไฮเดรต ไขมัน น้ำตาล ใยอาหาร โซเดียม และส่วนผสมใหม่ทั้งหมดอย่างละเอียด';
 
@@ -269,32 +272,35 @@ class NutritionProvider extends ChangeNotifier {
     );
   }
 
-  Future<FoodItem> saveCurrentAiMeal({NutritionAnalysisResult? customAnalysis}) async {
+  Future<FoodItem> saveCurrentAiMeal({
+    NutritionAnalysisResult? customAnalysis,
+  }) async {
     final analysis = customAnalysis ?? _currentAiAnalysis;
-    final foodItem = (analysis ??
-            NutritionAnalysisResult(
-              foodName: 'ข้าวกะเพราไก่ไข่ดาว',
-              estimatedPortion: 'ขนาดมาตรฐาน (380 กรัม)',
-              calories: 560.0,
-              protein: 32.0,
-              carbohydrates: 54.0,
-              fat: 24.0,
-              sugar: 3.5,
-              fiber: 4.2,
-              sodium: 780.0,
-              confidence: 0.94,
-              healthScore: 'เกรด B',
-              detectedIngredients: const [
-                'อกไก่ (150 กรัม)',
-                'ข้าวหอมมะลิ (1 ทัพพี)',
-                'ไข่ดาว (1 ฟอง)',
-                'ใบกะเพราและพริกสด',
-              ],
-              advice:
-                  'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
-              analyzedAt: DateTime.now(),
-            ))
-        .toFoodItem();
+    final foodItem =
+        (analysis ??
+                NutritionAnalysisResult(
+                  foodName: 'ข้าวกะเพราไก่ไข่ดาว',
+                  estimatedPortion: 'ขนาดมาตรฐาน (380 กรัม)',
+                  calories: 560.0,
+                  protein: 32.0,
+                  carbohydrates: 54.0,
+                  fat: 24.0,
+                  sugar: 3.5,
+                  fiber: 4.2,
+                  sodium: 780.0,
+                  confidence: 0.94,
+                  healthScore: 'เกรด B',
+                  detectedIngredients: const [
+                    'อกไก่ (150 กรัม)',
+                    'ข้าวหอมมะลิ (1 ทัพพี)',
+                    'ไข่ดาว (1 ฟอง)',
+                    'ใบกะเพราและพริกสด',
+                  ],
+                  advice:
+                      'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
+                  analyzedAt: DateTime.now(),
+                ))
+            .toFoodItem();
 
     await _repository.saveFoodItem(foodItem);
     _currentProduct = foodItem;
