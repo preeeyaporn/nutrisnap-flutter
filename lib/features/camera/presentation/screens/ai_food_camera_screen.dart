@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +21,7 @@ class AiFoodCameraScreen extends StatefulWidget {
 class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   CameraController? _cameraController;
+  Timer? _retryTimer;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _isInitializing = false;
@@ -48,8 +51,8 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     } else {
       _initCamera();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_isCameraInitialized) {
-          Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted && !_isCameraInitialized && !Platform.environment.containsKey('FLUTTER_TEST')) {
+          _retryTimer = Timer(const Duration(milliseconds: 1200), () {
             if (mounted && !_isCameraInitialized) {
               _initCamera();
             }
@@ -160,6 +163,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pulseController.dispose();
     if (widget.cameraController == null) {
