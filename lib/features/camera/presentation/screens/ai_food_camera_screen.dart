@@ -1,11 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
-import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
+import 'package:nutrisnap/core/services/gemini_service.dart';
+import 'package:nutrisnap/features/camera/presentation/screens/ai_analysis_result_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
 
 class AiFoodCameraScreen extends StatefulWidget {
   final CameraController? cameraController;
@@ -29,6 +30,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   @override
   void initState() {
     super.initState();
+    
+
+
     WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
       vsync: this,
@@ -43,6 +47,15 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       _isCameraInitialized = _cameraController!.value.isInitialized;
     } else {
       _initCamera();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isCameraInitialized) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted && !_isCameraInitialized) {
+              _initCamera();
+            }
+          });
+        }
+      });
     }
   }
 
@@ -63,18 +76,34 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
   Future<void> _initCamera() async {
     if (_isInitializing) return;
-    _isInitializing = true;
+    if (mounted) {
+      setState(() => _isInitializing = true);
+    }
     try {
       _cameras = await availableCameras();
       if (_cameras != null && _cameras!.isNotEmpty) {
-        final backCamera = _cameras!.firstWhere(
-          (c) => c.lensDirection == CameraLensDirection.back,
-          orElse: () => _cameras!.first,
-        );
-        await _setupController(backCamera);
+        CameraDescription selectedCamera;
+        if (kIsWeb) {
+          // On Web/PC Chrome, use first available camera (webcam)
+          selectedCamera = _cameras!.first;
+        } else {
+          selectedCamera = _cameras!.firstWhere(
+            (c) => c.lensDirection == CameraLensDirection.back,
+            orElse: () => _cameras!.first,
+          );
+        }
+        await _setupController(selectedCamera);
+      } else {
+        debugPrint('No cameras found on device');
+        if (mounted) {
+          setState(() => _isCameraInitialized = false);
+        }
       }
     } catch (e) {
       debugPrint('Camera error: $e');
+      if (mounted) {
+        setState(() => _isCameraInitialized = false);
+      }
     } finally {
       if (mounted) {
         setState(() => _isInitializing = false);
@@ -88,9 +117,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       await prevController.dispose();
     }
 
+    final preset = kIsWeb ? ResolutionPreset.medium : ResolutionPreset.high;
     final controller = CameraController(
       cameraDescription,
-      ResolutionPreset.high,
+      preset,
       enableAudio: false,
     );
     _cameraController = controller;
@@ -103,11 +133,27 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
         });
       }
     } catch (e) {
-      debugPrint('Error initializing camera: $e');
-      if (mounted) {
-        setState(() {
-          _isCameraInitialized = false;
-        });
+      debugPrint('Error initializing camera with preset $preset: $e');
+      try {
+        final fallbackController = CameraController(
+          cameraDescription,
+          ResolutionPreset.low,
+          enableAudio: false,
+        );
+        _cameraController = fallbackController;
+        await fallbackController.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      } catch (e2) {
+        debugPrint('Fallback camera init failed: $e2');
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = false;
+          });
+        }
       }
     }
   }
@@ -149,6 +195,54 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     }
   }
 
+  Future<void> _pickFromGalleryAndAnalyze() async {
+    final provider = context.read<NutritionProvider>();
+    if (provider.isLoading) return;
+
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile == null) return;
+      final bytes = await pickedFile.readAsBytes();
+      await provider.analyzeFoodImage(bytes, mimeType: 'image/jpeg');
+
+      if (!mounted) return;
+      if (provider.currentAiAnalysis != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => AiAnalysisResultScreen(
+              analysis: provider.currentAiAnalysis!,
+              imageBytes: bytes,
+            ),
+          ),
+        );
+      } else if (provider.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('การวิเคราะห์ภาพล้มเหลว: ${provider.errorMessage}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error picking from gallery: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ไม่สามารถเลือกรูปภาพจากคลังได้: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _captureAndAnalyze() async {
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
@@ -168,266 +262,98 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     await provider.analyzeFoodImage(imageBytes);
 
     if (!mounted) return;
-    final result = provider.currentAiAnalysis;
-    if (result != null) {
-      _showAiAnalysisModal(result);
+    if (provider.currentAiAnalysis != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AiAnalysisResultScreen(
+            analysis: provider.currentAiAnalysis!,
+            imageBytes: imageBytes,
+          ),
+        ),
+      );
+    } else if (provider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('การวิเคราะห์ภาพล้มเหลว: ${provider.errorMessage}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  void _showAiAnalysisModal(NutritionAnalysisResult analysis) {
-    showModalBottomSheet(
+  void _showGeminiApiKeyDialog() async {
+    final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
+    final controller = TextEditingController(text: savedKey);
+
+    if (!mounted) return;
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
+              const SizedBox(width: 8),
+              Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
+            ],
           ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Text(
+                'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision วิเคราะห์ภาพอาหารจริงจาก Google AI Studio:',
+                style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'AIzaSy...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Title & Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E8FF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Color(0xFF7C3AED),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('ผลวิเคราะห์ Gemini AI', style: AppTypography.heading3),
-                          Text(
-                            'ความแม่นยำ ${(analysis.confidence * 100).toInt()}% • ตรวจจับสำเร็จ',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: const Color(0xFF10B981),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEDE9FE),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      analysis.healthScore,
-                      style: AppTypography.chipText.copyWith(
-                        color: const Color(0xFF7C3AED),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Food Name & Portion Box
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      analysis.foodName,
-                      style: AppTypography.heading2.copyWith(fontSize: 20),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'สัดส่วนประมาณ: ${analysis.estimatedPortion}',
-                      style: AppTypography.bodySmall,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Calories highlight
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildMacroPill(
-                          'พลังงาน',
-                          '${analysis.calories.toInt()} kcal',
-                          AppColors.calorieColor,
-                          AppColors.calorieBg,
-                        ),
-                        _buildMacroPill(
-                          'โปรตีน',
-                          '${analysis.protein.toInt()}g',
-                          AppColors.proteinColor,
-                          AppColors.proteinBg,
-                        ),
-                        _buildMacroPill(
-                          'คาร์บ',
-                          '${analysis.carbohydrates.toInt()}g',
-                          AppColors.carbsColor,
-                          AppColors.carbsBg,
-                        ),
-                        _buildMacroPill(
-                          'ไขมัน',
-                          '${analysis.fat.toInt()}g',
-                          AppColors.fatColor,
-                          AppColors.fatBg,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Ingredients tags
-              Text('ส่วนผสมที่ตรวจพบ:', style: AppTypography.bodyMedium),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: analysis.detectedIngredients.map((i) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      i,
-                      style: AppTypography.chipText.copyWith(
-                        color: const Color(0xFF334155),
-                        fontSize: 12,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-
-              // Advice box
-              if (analysis.advice.isNotEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F3FF),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.tips_and_updates_rounded,
-                          color: Color(0xFF7C3AED), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          analysis.advice,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: const Color(0xFF4C1D95),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-              ],
-
-              // CTA Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => NutritionDetailScreen(
-                          item: analysis.toFoodItem(),
-                        ),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'ดูข้อมูลโภชนาการฉบับเต็ม',
-                    style: AppTypography.buttonText,
-                  ),
-                ),
+              Text(
+                '* หากไม่ระบุ ระบบจะใช้โหมดจำลองความแม่นยำสูง (Demo Fallback)',
+                style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('ยกเลิก'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final key = controller.text.trim();
+                await GeminiServiceImpl.saveApiKey(key);
+                if (!ctx.mounted) return;
+                Navigator.of(ctx).pop();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(key.isNotEmpty
+                        ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
+                        : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)'),
+                  ),
+                );
+              },
+              child: const Text('บันทึก'),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildMacroPill(String label, String value, Color color, Color bg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: AppTypography.bodySmall.copyWith(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTypography.heading3.copyWith(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -457,41 +383,44 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   // Model Selector Pill: "✦ ᯤ Gemini 1.5 Flash Vision"
                   Expanded(
                     child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF272733).withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                      child: GestureDetector(
+                        onTap: _showGeminiApiKeyDialog,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF272733).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                            ),
                           ),
-                        ),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                color: Color(0xFFA78BFA),
-                                size: 15,
-                              ),
-                              const SizedBox(width: 6),
-                              const Icon(
-                                Icons.wifi_tethering_rounded,
-                                color: Color(0xFFA78BFA),
-                                size: 14,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Gemini 1.5 Flash Vision',
-                                style: AppTypography.chipText.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFFA78BFA),
+                                  size: 15,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  Icons.wifi_tethering_rounded,
+                                  color: Color(0xFFA78BFA),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Gemini 1.5 Flash Vision',
+                                  style: AppTypography.chipText.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -518,7 +447,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   // Live Camera Preview using Camera package (or elegant camera feed placeholder)
                   _buildCameraPreview(),
 
-                  // Floating status pill: "● กำลังตรวจจับ: ผัดกะเพราไข่ดาว • พร้อมถ่าย"
+                  // Floating status pill
                   Positioned(
                     top: 18,
                     child: Container(
@@ -546,7 +475,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'กำลังตรวจจับ: ผัดกะเพราไข่ดาว • พร้อมถ่าย',
+                            'กำลังตรวจจับอาหาร... • พร้อมถ่าย',
                             style: AppTypography.chipText.copyWith(
                               color: const Color(0xFF0F172A),
                               fontSize: 12,
@@ -639,7 +568,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       children: [
                         // Left: Gallery button "คลังภาพ"
                         GestureDetector(
-                          onTap: _captureAndAnalyze,
+                          onTap: _pickFromGalleryAndAnalyze,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -752,6 +681,63 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       ],
                     ),
                   ),
+
+                  // Overlay when Gemini AI is analyzing
+                  if (nutritionProvider.isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(26),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E1E2D),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                                  blurRadius: 16,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Color(0xFF7C3AED),
+                                  strokeWidth: 3,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Gemini AI กำลังวิเคราะห์รูปอาหาร...',
+                                  style: AppTypography.heading3.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'กำลังคำนวณแคลอรี่และสารอาหาร',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -837,15 +823,47 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26),
         ),
-        child: SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: _cameraController!.value.previewSize?.height ?? 1,
-              height: _cameraController!.value.previewSize?.width ?? 1,
-              child: CameraPreview(_cameraController!),
-            ),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = _cameraController!.value.previewSize;
+            final double cameraAspect;
+            if (kIsWeb) {
+              cameraAspect = (size != null && size.height > 0)
+                  ? size.width / size.height
+                  : (4 / 3);
+            } else {
+              cameraAspect = (size != null && size.width > 0)
+                  ? size.height / size.width
+                  : (9 / 16);
+            }
+
+            final double containerAspect =
+                constraints.maxWidth / constraints.maxHeight;
+            double scale = 1.0;
+            if (cameraAspect > 0 && containerAspect > 0) {
+              if (containerAspect > cameraAspect) {
+                scale = containerAspect / cameraAspect;
+              } else {
+                scale = cameraAspect / containerAspect;
+              }
+            }
+
+            return Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                Transform.scale(
+                  scale: scale,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: cameraAspect,
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       );
     }
@@ -860,44 +878,80 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
         ),
       ),
       child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFF272733),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                  width: 1.5,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF272733),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: Color(0xFFA78BFA),
+                  size: 28,
                 ),
               ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: Color(0xFFA78BFA),
-                size: 28,
+              const SizedBox(height: 12),
+              Text(
+                'กล้อง AI พร้อมสแกนสารอาหาร',
+                style: AppTypography.chipText.copyWith(
+                  color: Colors.white,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'กล้อง AI พร้อมสแกนสารอาหาร',
-              style: AppTypography.chipText.copyWith(
-                color: Colors.white,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 4),
+              Text(
+                'เล็งกล้องไปที่อาหารในกรอบเพื่อเริ่มวิเคราะห์',
+                style: AppTypography.bodySmall.copyWith(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'เล็งกล้องไปที่อาหารในกรอบเพื่อเริ่มวิเคราะห์',
-              style: AppTypography.bodySmall.copyWith(
-                color: const Color(0xFF94A3B8),
-                fontSize: 11,
+              const SizedBox(height: 14),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                onPressed: _isInitializing ? null : _initCamera,
+                icon: _isInitializing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.videocam_rounded, size: 18),
+                label: Text(
+                  _isInitializing ? 'กำลังเปิดกล้อง...' : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
+                  style: AppTypography.buttonText.copyWith(fontSize: 13),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                kIsWeb
+                    ? '* สำหรับเบราว์เซอร์: กรุณากด "Allow" สิทธิ์กล้องที่มุมซ้ายบนของ Chrome'
+                    : 'หากกล้องไม่เปิด กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในมือถือ',
+                style: AppTypography.bodySmall.copyWith(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 10.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

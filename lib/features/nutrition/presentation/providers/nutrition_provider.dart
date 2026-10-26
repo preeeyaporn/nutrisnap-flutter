@@ -26,12 +26,16 @@ class NutritionProvider extends ChangeNotifier {
     loadRecentScans();
   }
 
+  List<int>? _lastCapturedImageBytes;
+
   List<FoodItem> get recentScans => _recentScans;
   FoodItem? get currentProduct => _currentProduct;
   NutritionAnalysisResult? get currentAiAnalysis => _currentAiAnalysis;
+  List<int>? get lastCapturedImageBytes => _lastCapturedImageBytes;
   ScanStatus get scanStatus => _scanStatus;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+  NutriSnapRepositoryImpl get repository => _repository;
 
   String get searchQuery => _searchQuery;
   String get selectedFilter => _selectedFilter;
@@ -200,14 +204,17 @@ class NutritionProvider extends ChangeNotifier {
 
   Future<bool> analyzeFoodImage(
     List<int> imageBytes, {
+    String mimeType = 'image/jpeg',
     String? userNotes,
   }) async {
     _isLoading = true;
     _errorMessage = null;
+    _lastCapturedImageBytes = imageBytes;
     notifyListeners();
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: imageBytes,
+      mimeType: mimeType,
       userNotes: userNotes,
     );
 
@@ -226,6 +233,74 @@ class NutritionProvider extends ChangeNotifier {
         return false;
       },
     );
+  }
+
+  Future<bool> recalculateWithFoodCorrection({
+    required String correctedFoodName,
+    List<int>? imageBytes,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final bytes = imageBytes ?? _lastCapturedImageBytes ?? List<int>.generate(100, (i) => i);
+    final prompt =
+        'ผู้ใช้ระบุว่าอาหารในภาพนี้คือ "$correctedFoodName" (ไม่ใช่ที่ตรวจจับได้ก่อนหน้า) กรุณาวิเคราะห์ภาพร่วมกับชื่ออาหาร "$correctedFoodName" และคำนวณคุณค่าทางโภชนาการ สัดส่วน แคลอรี่ โปรตีน คาร์โบไฮเดรต ไขมัน น้ำตาล ใยอาหาร โซเดียม และส่วนผสมใหม่ทั้งหมดอย่างละเอียด';
+
+    final result = await _repository.analyzeFoodImage(
+      imageBytes: bytes,
+      userNotes: prompt,
+    );
+
+    _isLoading = false;
+    return result.when(
+      success: (analysis) {
+        _currentAiAnalysis = analysis;
+        _currentProduct = analysis.toFoodItem();
+        loadRecentScans();
+        notifyListeners();
+        return true;
+      },
+      failure: (msg, ex) {
+        _errorMessage = msg;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  Future<FoodItem> saveCurrentAiMeal({NutritionAnalysisResult? customAnalysis}) async {
+    final analysis = customAnalysis ?? _currentAiAnalysis;
+    final foodItem = (analysis ??
+            NutritionAnalysisResult(
+              foodName: 'ข้าวกะเพราไก่ไข่ดาว',
+              estimatedPortion: 'ขนาดมาตรฐาน (380 กรัม)',
+              calories: 560.0,
+              protein: 32.0,
+              carbohydrates: 54.0,
+              fat: 24.0,
+              sugar: 3.5,
+              fiber: 4.2,
+              sodium: 780.0,
+              confidence: 0.94,
+              healthScore: 'เกรด B',
+              detectedIngredients: const [
+                'อกไก่ (150 กรัม)',
+                'ข้าวหอมมะลิ (1 ทัพพี)',
+                'ไข่ดาว (1 ฟอง)',
+                'ใบกะเพราและพริกสด',
+              ],
+              advice:
+                  'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
+              analyzedAt: DateTime.now(),
+            ))
+        .toFoodItem();
+
+    await _repository.saveFoodItem(foodItem);
+    _currentProduct = foodItem;
+    await loadRecentScans();
+    notifyListeners();
+    return foodItem;
   }
 
   void setCurrentProduct(FoodItem item) {

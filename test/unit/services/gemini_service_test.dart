@@ -8,6 +8,15 @@ class MockApiService extends Mock implements ApiService {}
 
 void main() {
   group('GeminiService Tests', () {
+    setUp(() {
+      GeminiServiceImpl.setGlobalApiKey(null);
+      GeminiServiceImpl.enableOfflineMockForTesting = true;
+    });
+
+    tearDown(() {
+      GeminiServiceImpl.enableOfflineMockForTesting = false;
+    });
+
     test('Offline / Mock fallback analyzes image and returns Pad Kra Pao matching Figma Screen 6', () async {
       final geminiService = GeminiServiceImpl(); // No API key -> demo/mock mode
       final bytes = [1, 2, 3, 4];
@@ -90,5 +99,38 @@ void main() {
       expect(result.dataOrNull?.calories, 480.0);
       expect(result.dataOrNull?.healthScore, 'เกรด A');
     });
+
+    test('analyzeFoodImage with userNotes correction returns recalculated dish in offline mode', () async {
+      final geminiService = GeminiServiceImpl(); // Offline / demo mode
+
+      // Test with "ข้าวมันไก่"
+      final resultChickenRice = await geminiService.analyzeFoodImage(
+        imageBytes: [1, 2, 3],
+        userNotes: 'ข้าวมันไก่พิเศษ',
+      );
+
+      expect(resultChickenRice.isSuccess, isTrue);
+      final chickenData = resultChickenRice.dataOrNull!;
+      expect(chickenData.foodName, contains('ข้าวมันไก่'));
+      expect(chickenData.userCorrection, isNotNull);
+      expect(chickenData.calories, 595.0);
+      expect(chickenData.protein, 29.0);
+      expect(chickenData.sodium, 820.0);
+      expect(chickenData.detectedIngredients, contains('เนื้อไก่ตอนต้ม (120 กรัม)'));
+
+      // Test with "ผัดไทย"
+      final resultPadThai = await geminiService.analyzeFoodImage(
+        imageBytes: [1, 2, 3],
+        userNotes: 'ผัดไทยกุ้งสด',
+      );
+
+      expect(resultPadThai.isSuccess, isTrue);
+      final padThaiData = resultPadThai.dataOrNull!;
+      expect(padThaiData.foodName, contains('ผัดไทย'));
+      expect(padThaiData.calories, 580.0);
+      expect(padThaiData.carbohydrates, 68.0);
+      expect(padThaiData.sodium, 960.0);
+    });
   });
 }
+
