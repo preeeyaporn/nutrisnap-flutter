@@ -21,6 +21,11 @@ class FoodItem {
   final List<String> ingredients;
   final String source; // 'barcode_scan', 'ai_vision', 'manual'
   final bool isFavorite;
+  final double servingsPerContainer; // จำนวนหน่วยบริโภคต่อซอง/บรรจุภัณฑ์
+  final bool isUserEdited; // ป้องกันไม่ให้ข้อมูลถูกเขียนทับอัตโนมัติเมื่อซิงค์รอบใหม่
+  final bool isReported; // สถานะรายงานข้อมูลไม่ตรงกับฉลากจริง
+  final String? reportNote; // หมายเหตุการรายงานข้อมูลผิดพลาด
+  final String? category; // 'snack', 'beverage', 'dairy', 'instant_meal', 'main_meal'
 
   const FoodItem({
     required this.id,
@@ -42,6 +47,11 @@ class FoodItem {
     this.ingredients = const [],
     this.source = 'barcode_scan',
     this.isFavorite = false,
+    this.servingsPerContainer = 1.0,
+    this.isUserEdited = false,
+    this.isReported = false,
+    this.reportNote,
+    this.category,
   });
 
   FoodItem copyWith({
@@ -64,6 +74,11 @@ class FoodItem {
     List<String>? ingredients,
     String? source,
     bool? isFavorite,
+    double? servingsPerContainer,
+    bool? isUserEdited,
+    bool? isReported,
+    String? reportNote,
+    String? category,
   }) {
     return FoodItem(
       id: id ?? this.id,
@@ -85,6 +100,11 @@ class FoodItem {
       ingredients: ingredients ?? this.ingredients,
       source: source ?? this.source,
       isFavorite: isFavorite ?? this.isFavorite,
+      servingsPerContainer: servingsPerContainer ?? this.servingsPerContainer,
+      isUserEdited: isUserEdited ?? this.isUserEdited,
+      isReported: isReported ?? this.isReported,
+      reportNote: reportNote ?? this.reportNote,
+      category: category ?? this.category,
     );
   }
 
@@ -109,6 +129,12 @@ class FoodItem {
       'ingredients': ingredients,
       'source': source,
       'isFavorite': isFavorite,
+      'servingsPerContainer': servingsPerContainer,
+      'is_user_edited': isUserEdited,
+      'isUserEdited': isUserEdited,
+      'isReported': isReported,
+      'reportNote': reportNote,
+      'category': category,
     };
   }
 
@@ -138,10 +164,67 @@ class FoodItem {
           const [],
       source: map['source']?.toString() ?? 'barcode_scan',
       isFavorite: map['isFavorite'] == true,
+      servingsPerContainer:
+          (map['servingsPerContainer'] as num?)?.toDouble() ?? 1.0,
+      isUserEdited:
+          map['is_user_edited'] == true || map['isUserEdited'] == true,
+      isReported: map['isReported'] == true,
+      reportNote: map['reportNote']?.toString(),
+      category: map['category']?.toString(),
     );
   }
 
-  // --- Nutrition Calculation Helpers ---
+  // --- Nutrition Calculation & Classification Helpers ---
+
+  /// จำแนกหมวดหมู่สินค้าอัตโนมัติจากรหัสผู้ผลิต GS1 / ชื่อสินค้า / แบรนด์
+  String get effectiveCategory {
+    if (category != null && category!.isNotEmpty) return category!;
+    final text = '$name $brand'.toLowerCase();
+    if (barcode.startsWith('8850718') ||
+        barcode.startsWith('8850100') ||
+        barcode.startsWith('8850029') ||
+        barcode.startsWith('8851007') ||
+        barcode.startsWith('8850125') ||
+        text.contains('มันฝรั่ง') ||
+        text.contains('ขนม') ||
+        text.contains('เลย์') ||
+        text.contains('lay') ||
+        text.contains('โปเต้') ||
+        text.contains('ปาปริก้า') ||
+        text.contains('คอนเน่') ||
+        text.contains('ตะวัน') ||
+        text.contains('ซันไบทส์') ||
+        text.contains('สแน็คแจ๊ค') ||
+        text.contains('ขาไก่') ||
+        text.contains('เบนโตะ') ||
+        text.contains('ปลาหมึก') ||
+        text.contains('สาหร่าย') ||
+        text.contains('เถ้าแก่น้อย') ||
+        text.contains('บิสกิต') ||
+        text.contains('คุกกี้') ||
+        text.contains('เวเฟอร์') ||
+        text.contains('ป๊อกกี้') ||
+        text.contains('เพรทซ์') ||
+        text.contains('โอรีโอ') ||
+        text.contains('นูเทลล่า') ||
+        text.contains('chip') ||
+        text.contains('snack') ||
+        text.contains('cookie') ||
+        text.contains('biscuit')) {
+      return 'snack';
+    }
+    if (servingSize.toLowerCase().contains('มล') ||
+        servingSize.toLowerCase().contains('ml') ||
+        text.contains('น้ำ') ||
+        text.contains('นม') ||
+        text.contains('โยเกิร์ต') ||
+        text.contains('ชา') ||
+        text.contains('โค้ก') ||
+        text.contains('โคคา-โคลา')) {
+      return 'beverage';
+    }
+    return 'main_meal';
+  }
 
   /// Calculates percentage of daily calorie target (default 2,000 kcal according to Thai RDI)
   double caloriePercentage([double dailyTarget = 2000.0]) {
