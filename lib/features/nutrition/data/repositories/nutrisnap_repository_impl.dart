@@ -100,8 +100,10 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     // ให้คืนค่าที่ผู้ใช้แก้ไขไว้ทันที เพื่อไม่ให้ถูกเขียนทับอัตโนมัติ
     final cachedResult = await _localRepository.getFoodItemByBarcode(barcode);
     final cachedItem = cachedResult.dataOrNull;
-    if (!forceRefresh && cachedItem != null && cachedItem.isUserEdited) {
-      return Result.success(cachedItem);
+    if (cachedItem != null) {
+      if (!forceRefresh || cachedItem.isUserEdited) {
+        return Result.success(cachedItem);
+      }
     }
 
     // 2. ดึงข้อมูลล่าสุดจาก Open Food Facts Service / Verified GDA Catalog
