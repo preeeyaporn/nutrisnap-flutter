@@ -817,34 +817,53 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     if (_isCameraInitialized &&
         _cameraController != null &&
         _cameraController!.value.isInitialized) {
-      final size = _cameraController!.value.previewSize;
-      final double width;
-      final double height;
-      if (kIsWeb || (size != null && size.width > size.height)) {
-        // Landscape (Desktop/Web webcam)
-        width = size?.width ?? 640;
-        height = size?.height ?? 480;
-      } else {
-        // Mobile portrait (vertical rotated)
-        width = size?.height ?? 1;
-        height = size?.width ?? 1;
-      }
-
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(26),
         ),
-        child: SizedBox.expand(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: CameraPreview(_cameraController!),
-            ),
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final size = _cameraController!.value.previewSize;
+            final double cameraAspect;
+            if (kIsWeb) {
+              cameraAspect = (size != null && size.height > 0)
+                  ? size.width / size.height
+                  : (4 / 3);
+            } else {
+              cameraAspect = (size != null && size.width > 0)
+                  ? size.height / size.width
+                  : (9 / 16);
+            }
+
+            final double containerAspect =
+                constraints.maxWidth / constraints.maxHeight;
+            double scale = 1.0;
+            if (cameraAspect > 0 && containerAspect > 0) {
+              if (containerAspect > cameraAspect) {
+                scale = containerAspect / cameraAspect;
+              } else {
+                scale = cameraAspect / containerAspect;
+              }
+            }
+
+            return Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                Transform.scale(
+                  scale: scale,
+                  child: Center(
+                    child: AspectRatio(
+                      aspectRatio: cameraAspect,
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       );
     }

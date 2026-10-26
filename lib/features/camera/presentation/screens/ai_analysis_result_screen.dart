@@ -333,34 +333,37 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   ),
                 ),
                 onPressed: _handleSaveAndNavigate,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.bookmark_rounded, size: 20, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Text(
-                      'บันทึกมื้ออาหารลงไดอารี่',
-                      style: AppTypography.buttonText.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'จัดเก็บในเครื่อง + คลาวด์',
-                        style: AppTypography.chipText.copyWith(
-                          color: Colors.white,
-                          fontSize: 10.5,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.bookmark_rounded, size: 20, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text(
+                        'บันทึกมื้ออาหารลงไดอารี่',
+                        style: AppTypography.buttonText.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'จัดเก็บในเครื่อง + คลาวด์',
+                          style: AppTypography.chipText.copyWith(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -919,7 +922,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
     required String altText,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
@@ -927,35 +930,41 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: indicatorColor,
-                  shape: BoxShape.circle,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: indicatorColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: AppTypography.bodySmall.copyWith(
-                  color: const Color(0xFF475569),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: const Color(0xFF475569),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 6),
-          Text(
-            grams,
-            style: AppTypography.heading3.copyWith(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              grams,
+              style: AppTypography.heading3.copyWith(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
             ),
           ),
           const SizedBox(height: 2),
