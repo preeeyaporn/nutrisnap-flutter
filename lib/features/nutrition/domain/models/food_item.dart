@@ -126,7 +126,8 @@ class FoodItem {
       scannedAt: map['scannedAt'] != null
           ? DateTime.tryParse(map['scannedAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      ingredients: (map['ingredients'] as List<dynamic>?)
+      ingredients:
+          (map['ingredients'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

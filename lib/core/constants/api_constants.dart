@@ -6,14 +6,19 @@ class ApiConstants {
   static const String openFoodFactsBaseUrl = 'https://world.openfoodfacts.org';
   static const String openFoodFactsProductEndpoint = '/api/v2/product';
   static const String openFoodFactsSearchEndpoint = '/cgi/search.pl';
-  static const String openFoodFactsUserAgent = 'NutriSnap - Flutter - Version 1.0.0';
+  static const String openFoodFactsUserAgent =
+      'NutriSnap - Flutter - Version 1.0.0';
 
   // Gemini API
-  static const String geminiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+  static const String geminiBaseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
   static const String defaultGeminiModel = 'gemini-flash-lite-latest';
-  static const String defaultGeminiApiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+  static const String defaultGeminiApiKey = String.fromEnvironment(
+    'GEMINI_API_KEY',
+    defaultValue: '',
+  );
   static const String geminiApiKeyPrefKey = 'nutrisnap_gemini_api_key';
-  
+
   // Timeout settings
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 30);

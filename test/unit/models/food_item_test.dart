@@ -52,10 +52,7 @@ void main() {
     });
 
     test('copyWith should update specified fields only', () {
-      final updated = sampleFood.copyWith(
-        calories: 80.0,
-        isFavorite: true,
-      );
+      final updated = sampleFood.copyWith(calories: 80.0, isFavorite: true);
 
       expect(updated.id, sampleFood.id);
       expect(updated.name, sampleFood.name);
@@ -64,14 +61,17 @@ void main() {
       expect(sampleFood.isFavorite, isFalse);
     });
 
-    test('FoodItem handles empty or null map gracefully with default values', () {
-      final item = FoodItem.fromMap(const {});
-      expect(item.id, '');
-      expect(item.name, 'ไม่ระบุชื่ออาหาร');
-      expect(item.calories, 0.0);
-      expect(item.protein, 0.0);
-      expect(item.servingSize, '100g');
-    });
+    test(
+      'FoodItem handles empty or null map gracefully with default values',
+      () {
+        final item = FoodItem.fromMap(const {});
+        expect(item.id, '');
+        expect(item.name, 'ไม่ระบุชื่ออาหาร');
+        expect(item.calories, 0.0);
+        expect(item.protein, 0.0);
+        expect(item.servingSize, '100g');
+      },
+    );
 
     test('equality and hashCode should work based on id', () {
       final item1 = FoodItem(

@@ -60,9 +60,7 @@ class FirestoreFoodRepository implements FoodRepository {
   Future<Result<List<FoodItem>>> getAllFoodItems() async {
     try {
       await Future.delayed(const Duration(milliseconds: 150));
-      final items = _cloudStore.values
-          .map((m) => FoodItem.fromMap(m))
-          .toList();
+      final items = _cloudStore.values.map((m) => FoodItem.fromMap(m)).toList();
       items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
       return Result.success(items);
     } catch (e) {

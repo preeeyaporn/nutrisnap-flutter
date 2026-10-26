@@ -45,7 +45,9 @@ class FakeGeminiService implements GeminiService {
   }
 
   @override
-  Future<Result<NutritionAnalysisResult>> analyzeFoodText({required String textPrompt}) async {
+  Future<Result<NutritionAnalysisResult>> analyzeFoodText({
+    required String textPrompt,
+  }) async {
     return Result.success(
       NutritionAnalysisResult(
         foodName: textPrompt,
@@ -67,7 +69,10 @@ class FakeGeminiService implements GeminiService {
   }
 
   @override
-  Future<Result<String>> askNutritionAdvice({required String question, FoodItem? currentFood}) async {
+  Future<Result<String>> askNutritionAdvice({
+    required String question,
+    FoodItem? currentFood,
+  }) async {
     return Result.success('คำแนะนำทางโภชนาการ');
   }
 
@@ -77,19 +82,23 @@ class FakeGeminiService implements GeminiService {
 
 class FakeLocalRepository implements FoodRepository {
   @override
-  Future<Result<void>> saveFoodItem(FoodItem item) async => Result.success(null);
+  Future<Result<void>> saveFoodItem(FoodItem item) async =>
+      Result.success(null);
 
   @override
-  Future<Result<FoodItem?>> getFoodItemById(String id) async => Result.success(null);
+  Future<Result<FoodItem?>> getFoodItemById(String id) async =>
+      Result.success(null);
 
   @override
-  Future<Result<FoodItem?>> getFoodItemByBarcode(String barcode) async => Result.success(null);
+  Future<Result<FoodItem?>> getFoodItemByBarcode(String barcode) async =>
+      Result.success(null);
 
   @override
   Future<Result<List<FoodItem>>> getAllFoodItems() async => Result.success([]);
 
   @override
-  Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async => Result.success([]);
+  Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async =>
+      Result.success([]);
 
   @override
   Future<Result<void>> deleteFoodItem(String id) async => Result.success(null);
@@ -110,12 +119,14 @@ void main() {
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: fakeRepo)),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NutritionProvider(repository: fakeRepo),
+        ),
       ],
-      child: const MaterialApp(
-        home: AiFoodCameraScreen(),
-      ),
+      child: const MaterialApp(home: AiFoodCameraScreen()),
     );
   }
 
@@ -132,7 +143,10 @@ void main() {
       expect(find.text('กำลังตรวจจับอาหาร... • พร้อมถ่าย'), findsOneWidget);
 
       // Lighting hint
-      expect(find.text('แสงสว่างที่เพียงพอช่วยเพิ่มความแม่นยำในการคำนวณโภชนาการ'), findsOneWidget);
+      expect(
+        find.text('แสงสว่างที่เพียงพอช่วยเพิ่มความแม่นยำในการคำนวณโภชนาการ'),
+        findsOneWidget,
+      );
 
       // Camera controls
       expect(find.text('คลังภาพ'), findsOneWidget);
@@ -143,7 +157,9 @@ void main() {
       expect(find.text('ประมาณการอัตโนมัติ: เปิดใช้งาน'), findsOneWidget);
     });
 
-    testWidgets('tapping shutter button triggers analysis bottom sheet', (tester) async {
+    testWidgets('tapping shutter button triggers analysis bottom sheet', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

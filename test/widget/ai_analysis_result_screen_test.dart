@@ -28,26 +28,32 @@ void main() {
       'ไข่ดาว (1 ฟอง)',
       'ใบกะเพราและพริกสด',
     ],
-    advice: 'หมายเหตุ: ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
+    advice:
+        'หมายเหตุ: ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
     analyzedAt: DateTime(2026, 10, 8, 12, 30),
   );
 
   Widget createTestWidget({NutritionAnalysisResult? analysis}) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
       child: MaterialApp(
-        home: AiAnalysisResultScreen(
-          analysis: analysis ?? initialAnalysis,
-        ),
+        home: AiAnalysisResultScreen(analysis: analysis ?? initialAnalysis),
       ),
     );
   }
 
   group('AiAnalysisResultScreen Widget Tests (Screen 8)', () {
-    testWidgets('renders all Figma Screen 8 elements accurately', (tester) async {
+    testWidgets('renders all Figma Screen 8 elements accurately', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -55,7 +61,10 @@ void main() {
       expect(find.text('รายละเอียดอาหาร'), findsOneWidget);
 
       // Top Badges
-      expect(find.textContaining('ความแม่นยำ 94% • Gemini Vision API'), findsOneWidget);
+      expect(
+        find.textContaining('ความแม่นยำ 94% • Gemini Vision API'),
+        findsOneWidget,
+      );
       expect(find.text('ตรวจสอบแล้ว'), findsOneWidget);
 
       // Food card
@@ -63,7 +72,10 @@ void main() {
       expect(find.textContaining('ข้าวกะเพราไก่ไข่ดาว'), findsWidgets);
 
       // Warning Note
-      expect(find.textContaining('ข้อมูลโภชนาการเป็นค่าประมาณ'), findsOneWidget);
+      expect(
+        find.textContaining('ข้อมูลโภชนาการเป็นค่าประมาณ'),
+        findsOneWidget,
+      );
 
       // Calories & Macros
       expect(find.text('560'), findsOneWidget);
@@ -85,7 +97,9 @@ void main() {
       expect(find.text('ถ่ายภาพใหม่อีกครั้ง'), findsOneWidget);
     });
 
-    testWidgets('recalculates nutrition when user enters corrected food name', (tester) async {
+    testWidgets('recalculates nutrition when user enters corrected food name', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -119,21 +133,24 @@ void main() {
       expect(find.textContaining('เรียบร้อยแล้ว'), findsOneWidget);
     });
 
-    testWidgets('tapping save button navigates to Screen 10 (MealDetailScreen)', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping save button navigates to Screen 10 (MealDetailScreen)',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      final saveButton = find.text('บันทึกมื้ออาหารลงไดอารี่');
-      await tester.ensureVisible(saveButton);
-      await tester.pumpAndSettle();
+        final saveButton = find.text('บันทึกมื้ออาหารลงไดอารี่');
+        await tester.ensureVisible(saveButton);
+        await tester.pumpAndSettle();
 
-      await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+        await tester.tap(saveButton);
+        await tester.pumpAndSettle();
 
-      // MealDetailScreen (Screen 10) elements should appear
-      expect(find.byType(MealDetailScreen), findsOneWidget);
-      expect(find.text('สแกนและยืนยันแล้ว'), findsOneWidget);
-      expect(find.text('พลังงานที่ได้รับ'), findsOneWidget);
-    });
+        // MealDetailScreen (Screen 10) elements should appear
+        expect(find.byType(MealDetailScreen), findsOneWidget);
+        expect(find.text('สแกนและยืนยันแล้ว'), findsOneWidget);
+        expect(find.text('พลังงานที่ได้รับ'), findsOneWidget);
+      },
+    );
   });
 }

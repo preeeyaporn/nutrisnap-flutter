@@ -33,7 +33,9 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
   void initState() {
     super.initState();
     _currentAnalysis = widget.analysis;
-    _correctionController = TextEditingController(text: _currentAnalysis.foodName);
+    _correctionController = TextEditingController(
+      text: _currentAnalysis.foodName,
+    );
   }
 
   @override
@@ -75,7 +77,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
           backgroundColor: const Color(0xFF10B981),
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -93,7 +99,9 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
 
   Future<void> _handleSaveAndNavigate() async {
     final provider = context.read<NutritionProvider>();
-    final foodItem = await provider.saveCurrentAiMeal(customAnalysis: _currentAnalysis);
+    final foodItem = await provider.saveCurrentAiMeal(
+      customAnalysis: _currentAnalysis,
+    );
 
     if (!mounted) return;
 
@@ -165,7 +173,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
             child: CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF7C3AED),
-              child: const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -180,7 +192,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3E8FF),
                     borderRadius: BorderRadius.circular(20),
@@ -188,7 +203,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED), size: 14),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Color(0xFF7C3AED),
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'ความแม่นยำ $confidencePercent% • Gemini Vision API',
@@ -292,7 +311,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
@@ -338,7 +360,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.bookmark_rounded, size: 20, color: Colors.white),
+                      const Icon(
+                        Icons.bookmark_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'บันทึกมื้ออาหารลงไดอารี่',
@@ -349,7 +375,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(12),
@@ -383,7 +412,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   ),
                 ),
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.camera_alt_outlined, size: 20, color: Color(0xFF475569)),
+                icon: const Icon(
+                  Icons.camera_alt_outlined,
+                  size: 20,
+                  color: Color(0xFF475569),
+                ),
                 label: Text(
                   'ถ่ายภาพใหม่อีกครั้ง',
                   style: AppTypography.buttonText.copyWith(
@@ -443,16 +476,25 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
               top: 14,
               left: 14,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B).withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'ผลวิเคราะห์ Gemini AI',
@@ -477,7 +519,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(14),
@@ -485,8 +530,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.dinner_dining_rounded,
-                            color: Color(0xFF7C3AED), size: 14),
+                        const Icon(
+                          Icons.dinner_dining_rounded,
+                          color: Color(0xFF7C3AED),
+                          size: 14,
+                        ),
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(
@@ -523,7 +571,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded, color: Colors.white70, size: 13),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        color: Colors.white70,
+                        size: 13,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'ถ่ายภาพเมื่อสักครู่',
@@ -535,7 +587,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                       if (_currentAnalysis.userCorrection != null) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF10B981),
                             borderRadius: BorderRadius.circular(8),
@@ -576,7 +631,11 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
       errorBuilder: (context, error, stackTrace) => Container(
         color: const Color(0xFF334155),
         child: const Center(
-          child: Icon(Icons.restaurant_rounded, color: Colors.white54, size: 54),
+          child: Icon(
+            Icons.restaurant_rounded,
+            color: Colors.white54,
+            size: 54,
+          ),
         ),
       ),
     );
@@ -680,24 +739,36 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                   TextField(
                     controller: _correctionController,
                     decoration: InputDecoration(
-                      hintText: 'เช่น ข้าวกะเพราไก่ไข่ดาว, ผัดไทยกุ้งสด, ข้าวมันไก่...',
-                      hintStyle: AppTypography.bodySmall.copyWith(color: const Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.restaurant_menu_rounded,
-                          color: Color(0xFF7C3AED), size: 20),
+                      hintText:
+                          'เช่น ข้าวกะเพราไก่ไข่ดาว, ผัดไทยกุ้งสด, ข้าวมันไก่...',
+                      hintStyle: AppTypography.bodySmall.copyWith(
+                        color: const Color(0xFF94A3B8),
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.restaurant_menu_rounded,
+                        color: Color(0xFF7C3AED),
+                        size: 20,
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.clear_rounded, size: 18),
                         onPressed: () => _correctionController.clear(),
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF7C3AED),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -728,7 +799,9 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                         _isRecalculating
                             ? 'Gemini กำลังคำนวณใหม่...'
                             : 'ให้ Gemini คำนวณสารอาหารใหม่',
-                        style: AppTypography.buttonText.copyWith(fontSize: 13.5),
+                        style: AppTypography.buttonText.copyWith(
+                          fontSize: 13.5,
+                        ),
                       ),
                     ),
                   ),
@@ -806,7 +879,10 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
@@ -831,10 +907,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                 height: 58,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF7C3AED),
-                    width: 4,
-                  ),
+                  border: Border.all(color: const Color(0xFF7C3AED), width: 4),
                 ),
                 child: const Center(
                   child: Icon(
@@ -991,13 +1064,17 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
 
   Widget _buildIngredientChip(String text) {
     IconData icon = Icons.fiber_manual_record_rounded;
-    if (text.contains('ไก่') || text.contains('หมู') || text.contains('เนื้อ')) {
+    if (text.contains('ไก่') ||
+        text.contains('หมู') ||
+        text.contains('เนื้อ')) {
       icon = Icons.lunch_dining_rounded;
     } else if (text.contains('ข้าว')) {
       icon = Icons.rice_bowl_rounded;
     } else if (text.contains('ไข่')) {
       icon = Icons.egg_rounded;
-    } else if (text.contains('กะเพรา') || text.contains('ผัก') || text.contains('พริก')) {
+    } else if (text.contains('กะเพรา') ||
+        text.contains('ผัก') ||
+        text.contains('พริก')) {
       icon = Icons.eco_rounded;
     }
 

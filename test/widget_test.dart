@@ -4,15 +4,14 @@ import 'package:nutrisnap/features/nutrition/data/repositories/nutrisnap_reposit
 import 'package:nutrisnap/main.dart';
 
 void main() {
-  testWidgets('NutriSnapApp launches and shows splash screen elements', (WidgetTester tester) async {
+  testWidgets('NutriSnapApp launches and shows splash screen elements', (
+    WidgetTester tester,
+  ) async {
     final mockAuth = FirebaseAuthServiceImpl();
     final mockRepo = NutriSnapRepositoryImpl();
 
     await tester.pumpWidget(
-      NutriSnapApp(
-        authService: mockAuth,
-        repository: mockRepo,
-      ),
+      NutriSnapApp(authService: mockAuth, repository: mockRepo),
     );
     await tester.pumpAndSettle();
 

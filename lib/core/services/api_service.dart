@@ -44,7 +44,9 @@ class HttpApiService implements ApiService {
           .timeout(timeout ?? ApiConstants.connectTimeout);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final decoded =
+            json.decode(utf8.decode(response.bodyBytes))
+                as Map<String, dynamic>;
         return Result.success(decoded);
       } else {
         return Result.failure(
@@ -79,7 +81,9 @@ class HttpApiService implements ApiService {
           .timeout(timeout ?? ApiConstants.receiveTimeout);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = json.decode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final decoded =
+            json.decode(utf8.decode(response.bodyBytes))
+                as Map<String, dynamic>;
         return Result.success(decoded);
       } else {
         return Result.failure(

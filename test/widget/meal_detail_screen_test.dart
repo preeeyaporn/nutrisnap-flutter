@@ -49,27 +49,32 @@ void main() {
       'ไข่ดาว (1 ฟอง)',
       'ใบกะเพราและพริกสด',
     ],
-    advice: 'หมายเหตุ: ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
+    advice:
+        'หมายเหตุ: ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
     analyzedAt: DateTime(2026, 10, 24, 12, 30),
   );
 
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
       child: MaterialApp(
-        home: MealDetailScreen(
-          item: testFood,
-          analysisResult: testAnalysis,
-        ),
+        home: MealDetailScreen(item: testFood, analysisResult: testAnalysis),
       ),
     );
   }
 
   group('MealDetailScreen Widget Tests (Screen 10)', () {
-    testWidgets('renders all Figma Screen 10 elements accurately', (tester) async {
+    testWidgets('renders all Figma Screen 10 elements accurately', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -142,7 +147,9 @@ void main() {
       expect(find.text('แก้ไขข้อมูลมื้ออาหาร'), findsNothing);
     });
 
-    testWidgets('tapping delete button opens delete confirmation dialog', (tester) async {
+    testWidgets('tapping delete button opens delete confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -155,7 +162,10 @@ void main() {
 
       // Verify confirmation dialog is shown
       expect(find.text('ลบรายการอาหาร?'), findsOneWidget);
-      expect(find.textContaining('คุณต้องการลบ "ข้าวกะเพราไก่ไข่ดาว"'), findsOneWidget);
+      expect(
+        find.textContaining('คุณต้องการลบ "ข้าวกะเพราไก่ไข่ดาว"'),
+        findsOneWidget,
+      );
 
       // Cancel dialog
       await tester.tap(find.text('ยกเลิก'));

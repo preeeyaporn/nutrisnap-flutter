@@ -26,7 +26,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void initState() {
     super.initState();
     _pages = [
-      HomeScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
+      HomeScreen(
+        onNavigateTab: (index) => setState(() => _currentIndex = index),
+      ),
       const _HistoryTab(),
       const _SyncTab(),
       const _ProfileTab(),
@@ -36,10 +38,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -107,7 +106,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                color: isSelected
+                    ? const Color(0xFF7C3AED)
+                    : const Color(0xFF94A3B8),
                 size: 22,
               ),
               const SizedBox(height: 3),
@@ -116,7 +117,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 child: Text(
                   label,
                   style: AppTypography.chipText.copyWith(
-                    color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                    color: isSelected
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFF94A3B8),
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -143,13 +146,20 @@ class _HistoryTab extends StatelessWidget {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.cloud_sync_rounded, color: AppColors.primary),
+            icon: const Icon(
+              Icons.cloud_sync_rounded,
+              color: AppColors.primary,
+            ),
             onPressed: () async {
               final ok = await context.read<NutritionProvider>().syncCloud();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
+                    content: Text(
+                      ok
+                          ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ'
+                          : 'ซิงค์ข้อมูลไม่สำเร็จ',
+                    ),
                     duration: const Duration(seconds: 1),
                   ),
                 );
@@ -166,11 +176,21 @@ class _HistoryTab extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.fastfood_outlined, size: 64, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.fastfood_outlined,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 12),
-                  Text('ยังไม่มีประวัติการสแกนอาหาร', style: AppTypography.bodyMedium),
+                  Text(
+                    'ยังไม่มีประวัติการสแกนอาหาร',
+                    style: AppTypography.bodyMedium,
+                  ),
                   const SizedBox(height: 6),
-                  Text('สแกนบาร์โค้ดหรือถ่ายภาพอาหารเพื่อเริ่มต้น', style: AppTypography.bodySmall),
+                  Text(
+                    'สแกนบาร์โค้ดหรือถ่ายภาพอาหารเพื่อเริ่มต้น',
+                    style: AppTypography.bodySmall,
+                  ),
                 ],
               ),
             );
@@ -190,7 +210,10 @@ class _HistoryTab extends StatelessWidget {
                   side: const BorderSide(color: Color(0xFFF1F5F9)),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   leading: Container(
                     width: 44,
                     height: 44,
@@ -213,7 +236,10 @@ class _HistoryTab extends StatelessWidget {
                     '${item.calories.toInt()} kcal • โปรตีน ${item.protein.toInt()}g • เกรด ${item.nutriScore ?? "A"}',
                     style: AppTypography.bodySmall,
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                  ),
                   onTap: () {
                     if (item.source == 'gemini_vision') {
                       Navigator.of(context).push(
@@ -224,7 +250,8 @@ class _HistoryTab extends StatelessWidget {
                     } else {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => NutritionDetailScreen(item: item),
+                          builder: (context) =>
+                              NutritionDetailScreen(item: item),
                         ),
                       );
                     }
@@ -302,7 +329,10 @@ class _SyncTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
@@ -311,8 +341,16 @@ class _SyncTab extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('ข้อมูลท้องถิ่นใน Hive', style: AppTypography.bodyMedium),
-                        Text('$itemsCount รายการ', style: AppTypography.heading3.copyWith(color: AppColors.primary)),
+                        Text(
+                          'ข้อมูลท้องถิ่นใน Hive',
+                          style: AppTypography.bodyMedium,
+                        ),
+                        Text(
+                          '$itemsCount รายการ',
+                          style: AppTypography.heading3.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -328,12 +366,20 @@ class _SyncTab extends StatelessWidget {
                         ),
                       ),
                       onPressed: () async {
-                        final ok = await context.read<NutritionProvider>().syncCloud();
+                        final ok = await context
+                            .read<NutritionProvider>()
+                            .syncCloud();
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
-                              backgroundColor: ok ? AppColors.success : AppColors.error,
+                              content: Text(
+                                ok
+                                    ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ'
+                                    : 'ซิงค์ข้อมูลไม่สำเร็จ',
+                              ),
+                              backgroundColor: ok
+                                  ? AppColors.success
+                                  : AppColors.error,
                             ),
                           );
                         }
@@ -364,8 +410,12 @@ class _ProfileTab extends StatelessWidget {
     final user = authProvider.currentUser;
     final displayName = user?.displayName.isNotEmpty == true
         ? user!.displayName
-        : (user?.isAnonymous == true ? 'ผู้ใช้งานทั่วไป (Guest)' : 'ผู้ใช้งาน NutriSnap');
-    final emailText = user?.email ?? (user?.isAnonymous == true ? 'โหมดทดลองใช้งาน' : 'ยังไม่ได้ระบุอีเมล');
+        : (user?.isAnonymous == true
+              ? 'ผู้ใช้งานทั่วไป (Guest)'
+              : 'ผู้ใช้งาน NutriSnap');
+    final emailText =
+        user?.email ??
+        (user?.isAnonymous == true ? 'โหมดทดลองใช้งาน' : 'ยังไม่ได้ระบุอีเมล');
     final targetKcal = user?.dailyCalorieTarget.toStringAsFixed(0) ?? '2,000';
 
     return Scaffold(
@@ -395,7 +445,11 @@ class _ProfileTab extends StatelessWidget {
                       gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 30),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -404,22 +458,37 @@ class _ProfileTab extends StatelessWidget {
                       children: [
                         Text(displayName, style: AppTypography.heading3),
                         const SizedBox(height: 2),
-                        Text(emailText, style: AppTypography.bodySmall.copyWith(color: AppColors.neutralSecondary)),
+                        Text(
+                          emailText,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.neutralSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text('เป้าหมาย $targetKcal kcal / วัน', style: AppTypography.bodySmall),
+                        Text(
+                          'เป้าหมาย $targetKcal kcal / วัน',
+                          style: AppTypography.bodySmall,
+                        ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: user?.isAnonymous == true ? const Color(0xFFF1F5F9) : AppColors.primaryLavender,
+                      color: user?.isAnonymous == true
+                          ? const Color(0xFFF1F5F9)
+                          : AppColors.primaryLavender,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       user?.isAnonymous == true ? 'GUEST' : 'PRO',
                       style: AppTypography.chipText.copyWith(
-                        color: user?.isAnonymous == true ? const Color(0xFF64748B) : AppColors.primary,
+                        color: user?.isAnonymous == true
+                            ? const Color(0xFF64748B)
+                            : AppColors.primary,
                       ),
                     ),
                   ),
@@ -439,27 +508,55 @@ class _ProfileTab extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.cloud_sync_outlined, color: AppColors.primary),
-                    title: Text('ซิงค์ข้อมูลกับ Firestore', style: AppTypography.bodyMedium),
-                    subtitle: Text('เชื่อมต่อ Firebase และสำรองข้อมูล', style: AppTypography.bodySmall),
+                    leading: const Icon(
+                      Icons.cloud_sync_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'ซิงค์ข้อมูลกับ Firestore',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'เชื่อมต่อ Firebase และสำรองข้อมูล',
+                      style: AppTypography.bodySmall,
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () async {
-                      final ok = await context.read<NutritionProvider>().syncCloud();
+                      final ok = await context
+                          .read<NutritionProvider>()
+                          .syncCloud();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(ok ? 'ซิงค์ข้อมูลแล้ว' : 'ไม่สามารถซิงค์ได้')),
+                          SnackBar(
+                            content: Text(
+                              ok ? 'ซิงค์ข้อมูลแล้ว' : 'ไม่สามารถซิงค์ได้',
+                            ),
+                          ),
                         );
                       }
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.psychology_outlined, color: AppColors.primary),
-                    title: Text('Gemini API Integration', style: AppTypography.bodyMedium),
-                    subtitle: Text('โมเดล: Gemini 1.5 Flash Vision (แตะเพื่อตั้งค่า Key)', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+                    leading: const Icon(
+                      Icons.psychology_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'Gemini API Integration',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'โมเดล: Gemini 1.5 Flash Vision (แตะเพื่อตั้งค่า Key)',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.primary,
+                    ),
                     onTap: () async {
-                      final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
+                      final savedKey =
+                          await GeminiServiceImpl.getSavedApiKey() ?? '';
                       final controller = TextEditingController(text: savedKey);
 
                       if (!context.mounted) return;
@@ -467,12 +564,22 @@ class _ProfileTab extends StatelessWidget {
                         context: context,
                         builder: (ctx) {
                           return AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                             title: Row(
                               children: [
-                                const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFF7C3AED),
+                                ),
                                 const SizedBox(width: 8),
-                                Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
+                                Text(
+                                  'ตั้งค่า Gemini API Key',
+                                  style: AppTypography.heading3.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ],
                             ),
                             content: Column(
@@ -481,21 +588,31 @@ class _ProfileTab extends StatelessWidget {
                               children: [
                                 Text(
                                   'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision จาก Google AI Studio:',
-                                  style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: const Color(0xFF475569),
+                                  ),
                                 ),
                                 const SizedBox(height: 12),
                                 TextField(
                                   controller: controller,
                                   decoration: InputDecoration(
                                     hintText: 'AIzaSy...',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                    prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.key_rounded,
+                                      color: Color(0xFF7C3AED),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   '* หากเว้นว่าง ระบบจะใช้โหมดจำลอง (Demo Mode) อัตโนมัติ',
-                                  style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontSize: 11,
+                                    color: const Color(0xFF94A3B8),
+                                  ),
                                 ),
                               ],
                             ),
@@ -513,15 +630,23 @@ class _ProfileTab extends StatelessWidget {
                                   final key = controller.text.trim();
                                   await GeminiServiceImpl.saveApiKey(key);
                                   if (context.mounted) {
-                                    context.read<NutritionProvider>().repository.geminiService.updateApiKey(key.isNotEmpty ? key : null);
+                                    context
+                                        .read<NutritionProvider>()
+                                        .repository
+                                        .geminiService
+                                        .updateApiKey(
+                                          key.isNotEmpty ? key : null,
+                                        );
                                   }
                                   if (!context.mounted) return;
                                   Navigator.of(ctx).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(key.isNotEmpty
-                                          ? 'บันทึก Gemini API Key สำเร็จ'
-                                          : 'ใช้งานโหมดจำลอง (Demo Mode)'),
+                                      content: Text(
+                                        key.isNotEmpty
+                                            ? 'บันทึก Gemini API Key สำเร็จ'
+                                            : 'ใช้งานโหมดจำลอง (Demo Mode)',
+                                      ),
                                     ),
                                   );
                                 },
@@ -535,23 +660,52 @@ class _ProfileTab extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.storage_outlined, color: AppColors.primary),
-                    title: Text('ฐานข้อมูลท้องถิ่น (Local DB)', style: AppTypography.bodyMedium),
-                    subtitle: Text('ขับเคลื่อนโดย Hive NoSQL Database', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                    leading: const Icon(
+                      Icons.storage_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'ฐานข้อมูลท้องถิ่น (Local DB)',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'ขับเคลื่อนโดย Hive NoSQL Database',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 20,
+                    ),
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                    title: Text('ออกจากระบบ', style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
-                    subtitle: Text('ออกจากบัญชีและกลับไปที่หน้าเข้าสู่ระบบ', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.chevron_right, color: AppColors.error),
+                    leading: const Icon(
+                      Icons.logout_rounded,
+                      color: AppColors.error,
+                    ),
+                    title: Text(
+                      'ออกจากระบบ',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'ออกจากบัญชีและกลับไปที่หน้าเข้าสู่ระบบ',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.error,
+                    ),
                     onTap: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('ออกจากระบบ'),
-                          content: const Text('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?'),
+                          content: const Text(
+                            'คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?',
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(false),
@@ -559,7 +713,10 @@ class _ProfileTab extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('ออกจากระบบ', style: TextStyle(color: Colors.red)),
+                              child: const Text(
+                                'ออกจากระบบ',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ),
                           ],
                         ),
@@ -569,7 +726,9 @@ class _ProfileTab extends StatelessWidget {
                         await context.read<AuthProvider>().signOut();
                         if (context.mounted) {
                           Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
                             (route) => false,
                           );
                         }

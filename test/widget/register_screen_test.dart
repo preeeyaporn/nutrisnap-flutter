@@ -21,14 +21,14 @@ void main() {
               NutritionProvider(repository: NutriSnapRepositoryImpl()),
         ),
       ],
-      child: const MaterialApp(
-        home: RegisterScreen(),
-      ),
+      child: const MaterialApp(home: RegisterScreen()),
     );
   }
 
   group('RegisterScreen Widget Tests', () {
-    testWidgets('renders all register screen UI elements correctly', (tester) async {
+    testWidgets('renders all register screen UI elements correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -54,11 +54,16 @@ void main() {
       expect(find.text('เข้าสู่ระบบ'), findsOneWidget);
     });
 
-    testWidgets('shows validation errors when fields are empty', (tester) async {
+    testWidgets('shows validation errors when fields are empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      final submitBtn = find.widgetWithText(ElevatedButton, 'สมัครสมาชิกและเริ่มใช้งาน');
+      final submitBtn = find.widgetWithText(
+        ElevatedButton,
+        'สมัครสมาชิกและเริ่มใช้งาน',
+      );
       await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
@@ -80,7 +85,10 @@ void main() {
       await tester.enterText(textFields.at(3), 'differentPassword');
       await tester.pumpAndSettle();
 
-      final submitBtn = find.widgetWithText(ElevatedButton, 'สมัครสมาชิกและเริ่มใช้งาน');
+      final submitBtn = find.widgetWithText(
+        ElevatedButton,
+        'สมัครสมาชิกและเริ่มใช้งาน',
+      );
       await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
@@ -99,7 +107,10 @@ void main() {
       await tester.enterText(textFields.at(3), '123');
       await tester.pumpAndSettle();
 
-      final submitBtn = find.widgetWithText(ElevatedButton, 'สมัครสมาชิกและเริ่มใช้งาน');
+      final submitBtn = find.widgetWithText(
+        ElevatedButton,
+        'สมัครสมาชิกและเริ่มใช้งาน',
+      );
       await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pumpAndSettle();
@@ -120,7 +131,9 @@ void main() {
       expect(muscleChip, findsOneWidget);
     });
 
-    testWidgets('successful registration navigates to MainShellScreen', (tester) async {
+    testWidgets('successful registration navigates to MainShellScreen', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
@@ -137,7 +150,10 @@ void main() {
       await tester.tap(weightLossChip);
       await tester.pumpAndSettle();
 
-      final submitBtn = find.widgetWithText(ElevatedButton, 'สมัครสมาชิกและเริ่มใช้งาน');
+      final submitBtn = find.widgetWithText(
+        ElevatedButton,
+        'สมัครสมาชิกและเริ่มใช้งาน',
+      );
       await tester.ensureVisible(submitBtn);
       await tester.tap(submitBtn);
       await tester.pump();

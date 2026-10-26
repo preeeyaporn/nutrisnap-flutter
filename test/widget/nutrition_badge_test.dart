@@ -10,8 +10,16 @@ void main() {
           home: Scaffold(
             body: Column(
               children: [
-                NutritionBadge(label: 'แคลอรี่', value: '250 kcal', type: NutrientType.calories),
-                NutritionBadge(label: 'โปรตีน', value: '20g', type: NutrientType.protein),
+                NutritionBadge(
+                  label: 'แคลอรี่',
+                  value: '250 kcal',
+                  type: NutrientType.calories,
+                ),
+                NutritionBadge(
+                  label: 'โปรตีน',
+                  value: '20g',
+                  type: NutrientType.protein,
+                ),
                 NutritionBadge(label: 'คาร์บ', type: NutrientType.carbs),
                 NutritionBadge(label: 'ไขมัน', type: NutrientType.fat),
                 NutritionBadge(label: 'น้ำตาล', type: NutrientType.sugar),

@@ -23,7 +23,10 @@ class NutritionDetailScreen extends StatelessWidget {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -32,7 +35,9 @@ class NutritionDetailScreen extends StatelessWidget {
               final isFav = item.isFavorite;
               return IconButton(
                 icon: Icon(
-                  isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  isFav
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
                   color: isFav ? AppColors.error : AppColors.textPrimary,
                 ),
                 onPressed: () {
@@ -40,8 +45,12 @@ class NutritionDetailScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        isFav ? 'ลบออกจากรายการโปรดแล้ว' : 'เพิ่มในรายการโปรดแล้ว',
-                        style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                        isFav
+                            ? 'ลบออกจากรายการโปรดแล้ว'
+                            : 'เพิ่มในรายการโปรดแล้ว',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                       duration: const Duration(seconds: 1),
                     ),
@@ -81,7 +90,9 @@ class NutritionDetailScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Center(
-                      child: item.imageUrl != null && item.imageUrl!.startsWith('assets/')
+                      child:
+                          item.imageUrl != null &&
+                              item.imageUrl!.startsWith('assets/')
                           ? Image.asset(item.imageUrl!, fit: BoxFit.contain)
                           : const Icon(
                               Icons.restaurant_rounded,
@@ -166,7 +177,9 @@ class NutritionDetailScreen extends StatelessWidget {
                 children: [
                   Text(
                     'พลังงานทั้งหมด',
-                    style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.white70,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   FittedBox(
@@ -198,7 +211,9 @@ class NutritionDetailScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'คิดเป็น ${(item.calories / 2000.0 * 100).toStringAsFixed(1)}% ของความต้องการพลังงานต่อวัน (2,000 kcal)',
-                    style: AppTypography.bodySmall.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
                   ),
                 ],
               ),
@@ -206,7 +221,10 @@ class NutritionDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Macronutrient Breakdown
-            Text('สารอาหารหลัก (Macronutrients)', style: AppTypography.heading3),
+            Text(
+              'สารอาหารหลัก (Macronutrients)',
+              style: AppTypography.heading3,
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(18),
@@ -258,12 +276,18 @@ class NutritionDetailScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.primaryLavender,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: AppColors.primaryLight.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+                  const Icon(
+                    Icons.auto_awesome,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -315,7 +339,9 @@ class NutritionDetailScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'บันทึก "${item.name}" ในบันทึกอาหารแล้ว',
-                              style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: Colors.white,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

@@ -59,7 +59,8 @@ class UserModel {
       displayName: map['displayName']?.toString() ?? 'ผู้ใช้งาน NutriSnap',
       photoUrl: map['photoUrl']?.toString(),
       isAnonymous: map['isAnonymous'] == true,
-      dailyCalorieTarget: (map['dailyCalorieTarget'] as num?)?.toDouble() ?? 2000.0,
+      dailyCalorieTarget:
+          (map['dailyCalorieTarget'] as num?)?.toDouble() ?? 2000.0,
       createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),

@@ -31,17 +31,17 @@ class GeminiServiceImpl implements GeminiService {
   String? _apiKey;
   static String? _globalApiKey;
 
-  GeminiServiceImpl({
-    ApiService? apiService,
-    String? apiKey,
-  }) : _apiService = apiService ?? HttpApiService() {
+  GeminiServiceImpl({ApiService? apiService, String? apiKey})
+    : _apiService = apiService ?? HttpApiService() {
     _apiKey = apiKey;
   }
 
   static bool enableOfflineMockForTesting = false;
 
   String? get apiKey {
-    if (enableOfflineMockForTesting && _apiKey == null && _globalApiKey == null) {
+    if (enableOfflineMockForTesting &&
+        _apiKey == null &&
+        _globalApiKey == null) {
       return null;
     }
     if (_apiKey != null && _apiKey!.trim().isNotEmpty) {
@@ -53,7 +53,11 @@ class GeminiServiceImpl implements GeminiService {
     const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
     if (envKey.isNotEmpty) return envKey;
     try {
-      final key = utf8.decode(base64Decode('QVEuQWI4Uk42SVNXWDZmRmxJMmF3cEZXYXJ1VDJwNVBJQkVJWlJ2T2RNbzk2dEE4dnVES1E='));
+      final key = utf8.decode(
+        base64Decode(
+          'QVEuQWI4Uk42SVNXWDZmRmxJMmF3cEZXYXJ1VDJwNVBJQkVJWlJ2T2RNbzk2dEE4dnVES1E=',
+        ),
+      );
       if (key.isNotEmpty) return key;
     } catch (_) {}
     return null;
@@ -86,9 +90,14 @@ class GeminiServiceImpl implements GeminiService {
         return key.trim();
       }
     } catch (_) {}
-    if (ApiConstants.defaultGeminiApiKey.isNotEmpty) return ApiConstants.defaultGeminiApiKey;
+    if (ApiConstants.defaultGeminiApiKey.isNotEmpty)
+      return ApiConstants.defaultGeminiApiKey;
     try {
-      final key = utf8.decode(base64Decode('QVEuQWI4Uk42SVNXWDZmRmxJMmF3cEZXYXJ1VDJwNVBJQkVJWlJ2T2RNbzk2dEE4dnVES1E='));
+      final key = utf8.decode(
+        base64Decode(
+          'QVEuQWI4Uk42SVNXWDZmRmxJMmF3cEZXYXJ1VDJwNVBJQkVJWlJ2T2RNbzk2dEE4dnVES1E=',
+        ),
+      );
       _globalApiKey = key;
       return key;
     } catch (_) {}
@@ -115,7 +124,9 @@ class GeminiServiceImpl implements GeminiService {
     if (!hasValidApiKey) {
       await Future.delayed(const Duration(milliseconds: 500));
       if (userNotes != null && userNotes.trim().isNotEmpty) {
-        return Result.success(_generateOfflineNutritionForCorrection(userNotes));
+        return Result.success(
+          _generateOfflineNutritionForCorrection(userNotes),
+        );
       }
       return Result.success(
         NutritionAnalysisResult(
@@ -147,7 +158,8 @@ class GeminiServiceImpl implements GeminiService {
 
     try {
       final base64Image = base64Encode(imageBytes);
-      final promptText = '''
+      final promptText =
+          '''
 คุณคือนักโภชนาการ AI ผู้เชี่ยวชาญด้านอาหารไทยและอาหารนานาชาติ
 หน้าที่ของคุณคือ: ดูรูปจานอาหารในภาพนี้ แล้วระบุชื่อเมนูอาหารภาษาไทยให้ถูกต้องแม่นยำ (เช่น ส้มตำปูปลาร้า, ส้มตำไทย, คอหมูย่าง, ต้มยำกุ้ง, ข้าวมันไก่, ข้าวผัด, ผัดกะเพรา ฯลฯ โดยดูจากลักษณะอาหารจริงในจาน ไม่เอาข้อความ UI) พร้อมประเมินแคลอรี่และสารอาหารจริง
 
@@ -177,18 +189,15 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
             'parts': [
               {'text': promptText},
               {
-                'inlineData': {
-                  'mimeType': mimeType,
-                  'data': base64Image,
-                }
-              }
-            ]
-          }
+                'inlineData': {'mimeType': mimeType, 'data': base64Image},
+              },
+            ],
+          },
         ],
         'generationConfig': {
           'responseMimeType': 'application/json',
           'temperature': 0.2,
-        }
+        },
       };
 
       final candidateModels = [
@@ -201,7 +210,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
       bool hitQuotaLimit = false;
 
       for (final model in candidateModels) {
-        final url = '${ApiConstants.geminiBaseUrl}/$model:generateContent?key=$activeKey';
+        final url =
+            '${ApiConstants.geminiBaseUrl}/$model:generateContent?key=$activeKey';
         final response = await _apiService.post(url, body: requestBody);
 
         final result = response.when(
@@ -209,11 +219,15 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
             try {
               final candidates = data['candidates'] as List<dynamic>?;
               if (candidates == null || candidates.isEmpty) return null;
-              final textPart = candidates[0]['content']['parts'][0]['text'] as String;
+              final textPart =
+                  candidates[0]['content']['parts'][0]['text'] as String;
               final match = RegExp(r'\{[\s\S]*\}').firstMatch(textPart);
               final cleanedJson = match != null
                   ? match.group(0)!
-                  : textPart.replaceAll('```json', '').replaceAll('```', '').trim();
+                  : textPart
+                        .replaceAll('```json', '')
+                        .replaceAll('```', '')
+                        .trim();
               final jsonMap = json.decode(cleanedJson) as Map<String, dynamic>;
               return NutritionAnalysisResult.fromMap(jsonMap);
             } catch (e) {
@@ -251,7 +265,9 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
     }
   }
 
-  static NutritionAnalysisResult _generateOfflineNutritionForCorrection(String notes) {
+  static NutritionAnalysisResult _generateOfflineNutritionForCorrection(
+    String notes,
+  ) {
     String cleanName = notes;
     if (cleanName.contains('คือ')) {
       final parts = cleanName.split('คือ');
@@ -264,7 +280,9 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
             .trim();
       }
     }
-    cleanName = cleanName.replaceAll('ผู้ใช้ระบุว่าอาหารในภาพนี้คือ', '').trim();
+    cleanName = cleanName
+        .replaceAll('ผู้ใช้ระบุว่าอาหารในภาพนี้คือ', '')
+        .trim();
     if (cleanName.isEmpty) cleanName = 'อาหารจานโปรด';
 
     if (cleanName.contains('กะเพรา')) {
@@ -286,7 +304,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
           'ไข่ดาว (1 ฟอง)',
           'ใบกะเพราและพริกสด',
         ],
-        advice: 'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
+        advice:
+            'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );
@@ -310,7 +329,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
           'แตงกวาและผักชี',
           'น้ำซุปฟักกลมกล่อม',
         ],
-        advice: 'มีโปรตีนสูงจากเนื้อไก่ แนะนำลดการราดน้ำจิ้มหวานหรือข้าวมันเพื่อควบคุมไขมันสะสม',
+        advice:
+            'มีโปรตีนสูงจากเนื้อไก่ แนะนำลดการราดน้ำจิ้มหวานหรือข้าวมันเพื่อควบคุมไขมันสะสม',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );
@@ -359,7 +379,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
           'ไข่ไก่สด',
           'น้ำจิ้มสุกี้เต้าหู้ยี้สูตรเข้มข้น',
         ],
-        advice: 'เมนูควบคุมน้ำหนักยอดเยี่ยม ใยอาหารสูง แนะนำใส่น้ำจิ้มพอเหมาะเพื่อคุมโซเดียม',
+        advice:
+            'เมนูควบคุมน้ำหนักยอดเยี่ยม ใยอาหารสูง แนะนำใส่น้ำจิ้มพอเหมาะเพื่อคุมโซเดียม',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );
@@ -384,7 +405,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
           'ข้าวคั่วและพริกป่น',
           'ผักชีฝรั่งและแตงกวาเคียง',
         ],
-        advice: 'ให้โปรตีนสูงจากเนื้อหมู แนะนำเลือกรับประทานคู่กับผักสดและจิ้มน้ำจิ้มพอดีคำเพื่อคุมโซเดียม',
+        advice:
+            'ให้โปรตีนสูงจากเนื้อหมู แนะนำเลือกรับประทานคู่กับผักสดและจิ้มน้ำจิ้มพอดีคำเพื่อคุมโซเดียม',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );
@@ -407,7 +429,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
           'ผักเคียงตามฤดูกาล',
           'เครื่องปรุงรสธรรมชาติ',
         ],
-        advice: 'คำนวณโภชนาการใหม่โดย Gemini ตามชื่ออาหารที่ระบุ สัดส่วนสารอาหารเหมาะสม',
+        advice:
+            'คำนวณโภชนาการใหม่โดย Gemini ตามชื่ออาหารที่ระบุ สัดส่วนสารอาหารเหมาะสม',
         analyzedAt: DateTime.now(),
         userCorrection: cleanName,
       );
@@ -442,7 +465,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
     final url =
         '${ApiConstants.geminiBaseUrl}/${ApiConstants.defaultGeminiModel}:generateContent?key=$apiKey';
 
-    final promptText = '''
+    final promptText =
+        '''
 ประเมินคุณค่าทางโภชนาการของอาหาร: "$textPrompt"
 ตอบกลับเป็น JSON เท่านั้น:
 {
@@ -464,13 +488,15 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
     final requestBody = {
       'contents': [
         {
-          'parts': [{'text': promptText}]
-        }
+          'parts': [
+            {'text': promptText},
+          ],
+        },
       ],
       'generationConfig': {
         'responseMimeType': 'application/json',
         'temperature': 0.2,
-      }
+      },
     };
 
     final response = await _apiService.post(url, body: requestBody);
@@ -479,8 +505,12 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
       success: (data) {
         try {
           final candidates = data['candidates'] as List<dynamic>?;
-          final textPart = candidates?[0]['content']['parts'][0]['text'] as String;
-          final cleanedJson = textPart.replaceAll('```json', '').replaceAll('```', '').trim();
+          final textPart =
+              candidates?[0]['content']['parts'][0]['text'] as String;
+          final cleanedJson = textPart
+              .replaceAll('```json', '')
+              .replaceAll('```', '')
+              .trim();
           final jsonMap = json.decode(cleanedJson) as Map<String, dynamic>;
           return Result.success(NutritionAnalysisResult.fromMap(jsonMap));
         } catch (e) {
@@ -507,7 +537,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
         ? 'อาหาร: ${currentFood.name}, แคลอรี่: ${currentFood.calories} kcal, โปรตีน: ${currentFood.protein}g, คาร์บ: ${currentFood.carbohydrates}g, ไขมัน: ${currentFood.fat}g'
         : 'ไม่มีข้อมูลอาหารเฉพาะ';
 
-    final promptText = 'บริบท: $foodContext\nคำถาม: $question\nตอบคำแนะนำสั้นกระชับเข้าใจง่ายเป็นภาษาไทย';
+    final promptText =
+        'บริบท: $foodContext\nคำถาม: $question\nตอบคำแนะนำสั้นกระชับเข้าใจง่ายเป็นภาษาไทย';
 
     final url =
         '${ApiConstants.geminiBaseUrl}/${ApiConstants.defaultGeminiModel}:generateContent?key=$apiKey';
@@ -515,9 +546,11 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
     final requestBody = {
       'contents': [
         {
-          'parts': [{'text': promptText}]
-        }
-      ]
+          'parts': [
+            {'text': promptText},
+          ],
+        },
+      ],
     };
 
     final response = await _apiService.post(url, body: requestBody);
@@ -526,7 +559,8 @@ ${userNotes != null ? 'ข้อมูลเพิ่มเติมหรือ
       success: (data) {
         try {
           final candidates = data['candidates'] as List<dynamic>?;
-          final textPart = candidates?[0]['content']['parts'][0]['text'] as String;
+          final textPart =
+              candidates?[0]['content']['parts'][0]['text'] as String;
           return Result.success(textPart.trim());
         } catch (e) {
           return Result.failure('ไม่สามารถรับคำแนะนำได้');

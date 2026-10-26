@@ -32,8 +32,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   @override
   void initState() {
     super.initState();
-    
-
 
     WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
@@ -293,12 +291,17 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Row(
             children: [
               const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
               const SizedBox(width: 8),
-              Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
+              Text(
+                'ตั้งค่า Gemini API Key',
+                style: AppTypography.heading3.copyWith(fontSize: 16),
+              ),
             ],
           ),
           content: Column(
@@ -307,21 +310,31 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
             children: [
               Text(
                 'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision วิเคราะห์ภาพอาหารจริงจาก Google AI Studio:',
-                style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+                style: AppTypography.bodySmall.copyWith(
+                  color: const Color(0xFF475569),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
                   hintText: 'AIzaSy...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.key_rounded,
+                    color: Color(0xFF7C3AED),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 '* หากไม่ระบุ ระบบจะใช้โหมดจำลองความแม่นยำสูง (Demo Fallback)',
-                style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
+                style: AppTypography.bodySmall.copyWith(
+                  fontSize: 11,
+                  color: const Color(0xFF94A3B8),
+                ),
               ),
             ],
           ),
@@ -343,9 +356,11 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(key.isNotEmpty
-                        ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
-                        : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)'),
+                    content: Text(
+                      key.isNotEmpty
+                          ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
+                          : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)',
+                    ),
                   ),
                 );
               },
@@ -356,7 +371,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -389,12 +403,19 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                       child: GestureDetector(
                         onTap: _showGeminiApiKeyDialog,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF272733).withValues(alpha: 0.85),
+                            color: const Color(
+                              0xFF272733,
+                            ).withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                              color: const Color(
+                                0xFF8B5CF6,
+                              ).withValues(alpha: 0.35),
                             ),
                           ),
                           child: FittedBox(
@@ -434,7 +455,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
                   // Flash button
                   _buildCircleButton(
-                    icon: _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                    icon: _isFlashOn
+                        ? Icons.flash_on_rounded
+                        : Icons.flash_off_rounded,
                     color: _isFlashOn ? Colors.amber : Colors.white,
                     onTap: _toggleFlash,
                   ),
@@ -454,7 +477,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   Positioned(
                     top: 18,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(20),
@@ -522,9 +548,14 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                     right: 20,
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E28).withValues(alpha: 0.90),
+                          color: const Color(
+                            0xFF1E1E28,
+                          ).withValues(alpha: 0.90),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.12),
@@ -615,7 +646,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                               border: Border.all(color: Colors.white, width: 4),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                                  color: const Color(
+                                    0xFF7C3AED,
+                                  ).withValues(alpha: 0.4),
                                   blurRadius: 18,
                                   spreadRadius: 2,
                                 ),
@@ -696,17 +729,24 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                         ),
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 20,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E1E2D),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                                color: const Color(
+                                  0xFF7C3AED,
+                                ).withValues(alpha: 0.5),
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                                  color: const Color(
+                                    0xFF7C3AED,
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 16,
                                   spreadRadius: 2,
                                 ),
@@ -775,7 +815,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF3E8FF),
                           borderRadius: BorderRadius.circular(14),
@@ -823,9 +866,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(26)),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final size = _cameraController!.value.previewSize;
@@ -926,19 +967,29 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _isInitializing ? null : _initCamera,
                 icon: _isInitializing
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.videocam_rounded, size: 18),
                 label: Text(
-                  _isInitializing ? 'กำลังเปิดกล้อง...' : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
+                  _isInitializing
+                      ? 'กำลังเปิดกล้อง...'
+                      : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
                   style: AppTypography.buttonText.copyWith(fontSize: 13),
                 ),
               ),

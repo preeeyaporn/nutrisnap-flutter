@@ -13,7 +13,7 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
   final ApiService _apiService;
 
   OpenFoodFactsServiceImpl({ApiService? apiService})
-      : _apiService = apiService ?? HttpApiService();
+    : _apiService = apiService ?? HttpApiService();
 
   @override
   Future<Result<FoodItem>> getProductByBarcode(String barcode) async {
@@ -35,10 +35,7 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
           fiber: 1.5,
           nutriScore: 'A',
           scannedAt: DateTime.now(),
-          ingredients: [
-            'น้ำมะพร้าวออร์แกนิก 100%',
-            'วิตามินซีธรรมชาติ',
-          ],
+          ingredients: ['น้ำมะพร้าวออร์แกนิก 100%', 'วิตามินซีธรรมชาติ'],
           source: 'barcode_scan',
         ),
       );
@@ -57,18 +54,25 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
           return Result.success(foodItem);
         } else {
           // Fallback if product not found in database: return structured fallback
-          return Result.failure('ไม่พบข้อมูลสินค้ารหัสบาร์โค้ด $barcode ในระบบ Open Food Facts');
+          return Result.failure(
+            'ไม่พบข้อมูลสินค้ารหัสบาร์โค้ด $barcode ในระบบ Open Food Facts',
+          );
         }
       },
       failure: (message, exception) {
         // Fallback demo product for offline / no internet testing
-        return Result.failure('เชื่อมต่อ Open Food Facts API ล้มเหลว: $message');
+        return Result.failure(
+          'เชื่อมต่อ Open Food Facts API ล้มเหลว: $message',
+        );
       },
     );
   }
 
   @override
-  Future<Result<List<FoodItem>>> searchProducts(String query, {int page = 1}) async {
+  Future<Result<List<FoodItem>>> searchProducts(
+    String query, {
+    int page = 1,
+  }) async {
     final url =
         '${ApiConstants.openFoodFactsBaseUrl}${ApiConstants.openFoodFactsSearchEndpoint}?search_terms=${Uri.encodeComponent(query)}&page=$page&search_simple=1&action=process&json=1';
 
@@ -114,7 +118,9 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
       barcode: barcode,
       name: name,
       brand: product['brands']?.toString() ?? '',
-      imageUrl: product['image_url']?.toString() ?? product['image_front_url']?.toString(),
+      imageUrl:
+          product['image_url']?.toString() ??
+          product['image_front_url']?.toString(),
       servingSize: product['serving_size']?.toString() ?? '100g',
       calories: calories,
       protein: protein,
@@ -122,7 +128,9 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
       fat: fat,
       sugar: sugar,
       fiber: fiber,
-      nutriScore: (nutriGrade != null && nutriGrade.isNotEmpty) ? nutriGrade : 'B',
+      nutriScore: (nutriGrade != null && nutriGrade.isNotEmpty)
+          ? nutriGrade
+          : 'B',
       scannedAt: DateTime.now(),
       ingredients: (product['ingredients_text']?.toString() ?? '')
           .split(',')
