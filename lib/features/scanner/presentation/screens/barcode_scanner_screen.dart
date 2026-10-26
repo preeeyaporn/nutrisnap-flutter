@@ -127,13 +127,23 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            onPressed: () {
+            onPressed: () async {
               final code = controller.text.trim();
+              Navigator.of(ctx).pop();
               if (code.isNotEmpty) {
                 setState(() => _currentBarcode = code);
-                context.read<NutritionProvider>().scanBarcode(code);
+                final success = await context.read<NutritionProvider>().scanBarcode(code);
+                if (!mounted) return;
+                if (!success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('ไม่พบข้อมูลสินค้ารหัส $code ในระบบ Open Food Facts'),
+                      backgroundColor: AppColors.warning,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
               }
-              Navigator.of(ctx).pop();
             },
             child: Text(
               'ค้นหา',
@@ -699,7 +709,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              scannedItem?.name ?? 'น้ำมะพร้าวสดออร์แกนิก...',
+                              nutritionProvider.scanStatus == ScanStatus.scanning
+                                  ? 'กำลังค้นหาข้อมูลสินค้า...'
+                                  : (scannedItem?.name ??
+                                      (nutritionProvider.scanStatus == ScanStatus.error
+                                          ? 'ไม่พบข้อมูลสินค้ารหัสนี้'
+                                          : 'น้ำมะพร้าวสดออร์แกนิก 100%')),
                               style: AppTypography.heading3.copyWith(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
@@ -708,7 +723,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              '${scannedItem?.servingSize ?? "330 มล."} • สด 100%',
+                              nutritionProvider.scanStatus == ScanStatus.scanning
+                                  ? 'กำลังเชื่อมต่อ Open Food Facts...'
+                                  : (scannedItem != null
+                                      ? '${scannedItem.brand.isNotEmpty ? "${scannedItem.brand} • " : ""}${scannedItem.servingSize}'
+                                      : (nutritionProvider.scanStatus == ScanStatus.error
+                                          ? 'ไม่มีในฐานข้อมูล Open Food Facts'
+                                          : '330 มล. • สด 100%')),
                               style: AppTypography.bodySmall.copyWith(
                                 color: const Color(0xFF64748B),
                                 fontSize: 12,
@@ -760,20 +781,30 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       ),
                       child: ElevatedButton(
                         onPressed: () {
-                          final item =
-                              scannedItem ??
+                          if (nutritionProvider.scanStatus == ScanStatus.scanning) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('กำลังค้นหาข้อมูลสินค้า กรุณารอสักครู่...')),
+                            );
+                            return;
+                          }
+
+                          final item = scannedItem ??
                               FoodItem(
                                 id: 'item_sample',
                                 barcode: _currentBarcode,
-                                name: 'น้ำมะพร้าวสดออร์แกนิก 100%',
-                                brand: 'Nature Choice',
-                                servingSize: '330 มล.',
-                                calories: 65,
-                                protein: 1.2,
-                                carbohydrates: 15,
-                                fat: 0.2,
-                                sugar: 12,
-                                nutriScore: 'A',
+                                name: _currentBarcode == '8850188800123'
+                                    ? 'น้ำมะพร้าวสดออร์แกนิก 100%'
+                                    : 'สินค้าบาร์โค้ด $_currentBarcode',
+                                brand: _currentBarcode == '8850188800123'
+                                    ? 'Nature Choice'
+                                    : 'ไม่พบใน Open Food Facts',
+                                servingSize: _currentBarcode == '8850188800123' ? '330 มล.' : '100g',
+                                calories: _currentBarcode == '8850188800123' ? 65 : 0,
+                                protein: _currentBarcode == '8850188800123' ? 1.2 : 0,
+                                carbohydrates: _currentBarcode == '8850188800123' ? 15 : 0,
+                                fat: _currentBarcode == '8850188800123' ? 0.2 : 0,
+                                sugar: _currentBarcode == '8850188800123' ? 12 : 0,
+                                nutriScore: _currentBarcode == '8850188800123' ? 'A' : null,
                                 scannedAt: DateTime.now(),
                               );
                           Navigator.of(context).push(

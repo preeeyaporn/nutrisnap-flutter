@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../utils/result.dart';
@@ -37,7 +38,7 @@ class HttpApiService implements ApiService {
             uri,
             headers: {
               'Accept': 'application/json',
-              'User-Agent': ApiConstants.openFoodFactsUserAgent,
+              if (!kIsWeb) 'User-Agent': ApiConstants.openFoodFactsUserAgent,
               ...?headers,
             },
           )
@@ -48,6 +49,14 @@ class HttpApiService implements ApiService {
             json.decode(utf8.decode(response.bodyBytes))
                 as Map<String, dynamic>;
         return Result.success(decoded);
+      } else if (response.statusCode == 404) {
+        try {
+          final decoded = json.decode(utf8.decode(response.bodyBytes));
+          if (decoded is Map<String, dynamic>) {
+            return Result.success(decoded);
+          }
+        } catch (_) {}
+        return Result.failure('HTTP Error: 404 - Not Found');
       } else {
         return Result.failure(
           'HTTP Error: ${response.statusCode} - ${response.reasonPhrase}',
@@ -85,6 +94,14 @@ class HttpApiService implements ApiService {
             json.decode(utf8.decode(response.bodyBytes))
                 as Map<String, dynamic>;
         return Result.success(decoded);
+      } else if (response.statusCode == 404) {
+        try {
+          final decoded = json.decode(utf8.decode(response.bodyBytes));
+          if (decoded is Map<String, dynamic>) {
+            return Result.success(decoded);
+          }
+        } catch (_) {}
+        return Result.failure('HTTP Error: 404 - Not Found');
       } else {
         return Result.failure(
           'HTTP Error: ${response.statusCode} - ${response.body}',

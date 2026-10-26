@@ -96,5 +96,32 @@ void main() {
       expect(item1, equals(item2));
       expect(item1.hashCode, equals(item2.hashCode));
     });
+
+    test('calorie and Thai RDI percentage calculations are mathematically accurate', () {
+      // 65 kcal / 2000 kcal * 100 = 3.25%
+      expect(sampleFood.caloriePercentage(2000.0), closeTo(3.25, 0.01));
+
+      // Protein: 1.2g / 50g * 100 = 2.4%
+      expect(sampleFood.proteinRdiPercentage(50.0), closeTo(2.4, 0.01));
+
+      // Carbs: 15.0g / 300g * 100 = 5.0%
+      expect(sampleFood.carbsRdiPercentage(300.0), closeTo(5.0, 0.01));
+
+      // Fat: 0.2g / 65g * 100 = 0.3076% ≈ 0.31%
+      expect(sampleFood.fatRdiPercentage(65.0), closeTo(0.307, 0.01));
+
+      // Sugar: 12.0g / 24g * 100 = 50.0%
+      expect(sampleFood.sugarRdiPercentage(24.0), closeTo(50.0, 0.01));
+
+      // Atwater factors: Protein 4 kcal/g, Carbs 4 kcal/g, Fat 9 kcal/g
+      expect(sampleFood.proteinKcal, closeTo(4.8, 0.01));
+      expect(sampleFood.carbsKcal, closeTo(60.0, 0.01));
+      expect(sampleFood.fatKcal, closeTo(1.8, 0.01));
+      expect(sampleFood.totalMacroKcal, closeTo(66.6, 0.01));
+
+      // Energy distribution ratio sum to 1.0
+      final sumRatios = sampleFood.proteinRatio + sampleFood.carbsRatio + sampleFood.fatRatio;
+      expect(sumRatios, closeTo(1.0, 0.001));
+    });
   });
 }

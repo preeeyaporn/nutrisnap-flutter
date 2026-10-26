@@ -19,6 +19,8 @@ sealed class Result<T> {
     Failure(message: final m) => m,
   };
 
+  String? get errorMessage => errorOrNull;
+
   R when<R>({
     required R Function(T data) success,
     required R Function(String message, Exception? exception) failure,

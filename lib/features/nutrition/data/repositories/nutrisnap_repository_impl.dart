@@ -7,13 +7,14 @@ import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
 import 'package:nutrisnap/features/nutrition/domain/repositories/food_repository.dart';
 
-/// Unified NutriSnap Repository coordinating Local (Hive), Cloud (Firestore),
+/// Unified Repository coordinating Local Hive DB, Cloud Firestore,
 /// Open Food Facts API, and Gemini AI Vision.
 class NutriSnapRepositoryImpl implements FoodRepository {
   final FoodRepository _localRepository;
   final FoodRepository? cloudRepository;
   final OpenFoodFactsService _openFoodFactsService;
   final GeminiService _geminiService;
+  final List<Map<String, dynamic>> _localReportsLog = [];
 
   NutriSnapRepositoryImpl({
     FoodRepository? localRepository,
@@ -25,31 +26,8 @@ class NutriSnapRepositoryImpl implements FoodRepository {
            openFoodFactsService ?? OpenFoodFactsServiceImpl(),
        _geminiService = geminiService ?? GeminiServiceImpl();
 
-  void updateUserId(String newUserId) {
-    final cloud = cloudRepository;
-    if (cloud is FirestoreFoodRepository) {
-      cloud.updateUserId(newUserId);
-    }
-  }
-
-  void updateUserInfo({
-    required String newUserId,
-    String? email,
-    String? displayName,
-    double? dailyTarget,
-  }) {
-    final cloud = cloudRepository;
-    if (cloud is FirestoreFoodRepository) {
-      cloud.updateUserInfo(
-        newUserId: newUserId,
-        email: email,
-        displayName: displayName,
-        dailyTarget: dailyTarget,
-      );
-    }
-  }
-
-  GeminiService get geminiService => _geminiService;
+  List<Map<String, dynamic>> get localReportsLog =>
+      List.unmodifiable(_localReportsLog);
 
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
@@ -87,27 +65,135 @@ class NutriSnapRepositoryImpl implements FoodRepository {
   }
 
   @override
-  Future<Result<FoodItem?>> getFoodItemByBarcode(String barcode) async {
-    // 1. Check local Hive cache
-    final cached = await _localRepository.getFoodItemByBarcode(barcode);
-    if (cached.isSuccess && cached.dataOrNull != null) {
-      return cached;
+  Future<Result<FoodItem?>> getFoodItemByBarcode(
+    String barcode, {
+    bool forceRefresh = false,
+  }) async {
+    // 1. ตรวจสอบข้อมูลใน Local Database ก่อน:
+    // หากผู้ใช้เคยแก้ไขข้อมูลด้วยตนเอง (isUserEdited == true) และไม่ได้สั่ง forceRefresh
+    // ให้คืนค่าที่ผู้ใช้แก้ไขไว้ทันที เพื่อไม่ให้ถูกเขียนทับอัตโนมัติ
+    final cachedResult = await _localRepository.getFoodItemByBarcode(barcode);
+    final cachedItem = cachedResult.dataOrNull;
+    if (!forceRefresh && cachedItem != null && cachedItem.isUserEdited) {
+      return Result.success(cachedItem);
     }
 
-    // 2. Query Open Food Facts REST API
+    // 2. ดึงข้อมูลล่าสุดจาก Open Food Facts Service / Verified GDA Catalog
     final remoteResult = await _openFoodFactsService.getProductByBarcode(
       barcode,
     );
     return remoteResult.when(
       success: (product) async {
-        // Cache to local Hive and sync to Firestore
-        await saveFoodItem(product);
-        return Result.success(product);
+        final mergedProduct = cachedItem != null
+            ? product.copyWith(
+                isFavorite: cachedItem.isFavorite,
+                isReported: cachedItem.isReported,
+                reportNote: cachedItem.reportNote,
+              )
+            : product;
+        // อัปเดตข้อมูลล่าสุดลง Local Hive และซิงค์ขึ้น Firestore
+        await saveFoodItem(mergedProduct);
+        return Result.success(mergedProduct);
       },
-      failure: (message, exception) {
+      failure: (message, exception) async {
+        // 3. หากดึงข้อมูลออนไลน์ไม่สำเร็จ จึงดึงจาก Local Hive Cache สำรอง
+        if (cachedItem != null) {
+          return Result.success(cachedItem);
+        }
         return Result.failure(message, exception);
       },
     );
+  }
+
+  /// 1. ระบบอัปเดตและ Refresh ฐานข้อมูลอาหารทั้งหมด (Bulk / Dynamic Update)
+  /// ดึงข้อมูลเวอร์ชันล่าสุดจาก Open Food Facts สำหรับทุกรายการใน Local Database
+  /// โดยข้ามรายการที่ผู้ใช้แก้ไขเอง (isUserEdited == true) เว้นแต่จะตั้ง overwriteUserEdited = true
+  Future<Result<int>> refreshAllFoodItems({
+    bool overwriteUserEdited = false,
+  }) async {
+    final allResult = await _localRepository.getAllFoodItems();
+    return allResult.when(
+      success: (items) async {
+        int updatedCount = 0;
+        for (final item in items) {
+          if (item.barcode.isEmpty) continue;
+          if (item.isUserEdited && !overwriteUserEdited) {
+            continue; // ป้องกันไม่ให้ข้อมูลที่ผู้ใช้แก้ไขถูกเขียนทับอัตโนมัติ
+          }
+
+          final freshRes = await _openFoodFactsService.getProductByBarcode(
+            item.barcode,
+          );
+          if (freshRes.isSuccess && freshRes.dataOrNull != null) {
+            final freshItem = freshRes.dataOrNull!.copyWith(
+              id: item.id,
+              isFavorite: item.isFavorite,
+              isUserEdited: false,
+              scannedAt: item.scannedAt,
+            );
+            await saveFoodItem(freshItem);
+            updatedCount++;
+          }
+        }
+        return Result.success(updatedCount);
+      },
+      failure: (msg, ex) => Result.failure(msg, ex),
+    );
+  }
+
+  /// 2. ฟังก์ชันบันทึกการแก้ไขข้อมูลโภชนาการด้วยตนเอง (User Manual Override)
+  /// ตั้งค่า isUserEdited = true ทันทีเพื่อป้องกันการเขียนทับเมื่อซิงค์รอบใหม่
+  Future<Result<FoodItem>> updateFoodItemManualOverride(
+    FoodItem editedItem,
+  ) async {
+    final overrideItem = editedItem.copyWith(
+      isUserEdited: true,
+      source: 'manual_override',
+      scannedAt: DateTime.now(),
+    );
+    final saveRes = await saveFoodItem(overrideItem);
+    if (saveRes.isFailure) {
+      return Result.failure(
+        saveRes.errorOrNull ?? 'บันทึกการแก้ไขข้อมูลไม่สำเร็จ',
+      );
+    }
+    return Result.success(overrideItem);
+  }
+
+  /// 3. ระบบรายงานข้อมูลผิดพลาด (Report Inaccurate Data)
+  /// บันทึก Flag รายการสินค้าที่ข้อมูลไม่ตรงกับบรรจุภัณฑ์จริง พร้อมแนบค่าที่ถูกต้องไปยัง Backend / Firebase
+  Future<Result<FoodItem>> reportInaccurateFoodData({
+    required FoodItem originalItem,
+    FoodItem? correctedItem,
+    required String reason,
+  }) async {
+    final targetItem = (correctedItem ?? originalItem).copyWith(
+      isReported: true,
+      reportNote: reason,
+      isUserEdited: correctedItem != null ? true : originalItem.isUserEdited,
+      scannedAt: DateTime.now(),
+    );
+
+    await saveFoodItem(targetItem);
+
+    final reportPayload = <String, dynamic>{
+      'barcode': originalItem.barcode,
+      'foodId': originalItem.id,
+      'name': originalItem.name,
+      'reason': reason,
+      'originalValues': originalItem.toMap(),
+      if (correctedItem != null) 'correctedValues': correctedItem.toMap(),
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    _localReportsLog.add(reportPayload);
+
+    final cloud = cloudRepository;
+    if (cloud is FirestoreFoodRepository) {
+      await cloud.submitDataReport(reportPayload);
+    }
+
+    return Result.success(targetItem);
   }
 
   /// AI Food Analysis using Gemini 1.5 Flash Vision
@@ -133,14 +219,51 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     );
   }
 
-  @override
-  Future<Result<List<FoodItem>>> getAllFoodItems() {
-    return _localRepository.getAllFoodItems();
+  Future<List<FoodItem>> _syncVerifiedCatalogItems(List<FoodItem> items) async {
+    final synced = <FoodItem>[];
+    for (final item in items) {
+      if (!item.isUserEdited && item.barcode.isNotEmpty) {
+        final verified = OpenFoodFactsServiceImpl.getCatalogItemIfPresent(
+          item.barcode,
+        );
+        if (verified != null &&
+            (item.calories != verified.calories ||
+                item.fat != verified.fat ||
+                item.sugar != verified.sugar ||
+                item.servingsPerContainer != verified.servingsPerContainer)) {
+          final upgraded = verified.copyWith(
+            id: item.id,
+            isFavorite: item.isFavorite,
+            scannedAt: item.scannedAt,
+          );
+          await _localRepository.saveFoodItem(upgraded);
+          synced.add(upgraded);
+          continue;
+        }
+      }
+      synced.add(item);
+    }
+    return synced;
   }
 
   @override
-  Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) {
-    return _localRepository.getRecentScans(limit: limit);
+  Future<Result<List<FoodItem>>> getAllFoodItems() async {
+    final res = await _localRepository.getAllFoodItems();
+    return res.when(
+      success: (items) async =>
+          Result.success(await _syncVerifiedCatalogItems(items)),
+      failure: (msg, ex) => Result.failure(msg, ex),
+    );
+  }
+
+  @override
+  Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async {
+    final res = await _localRepository.getRecentScans(limit: limit);
+    return res.when(
+      success: (items) async =>
+          Result.success(await _syncVerifiedCatalogItems(items)),
+      failure: (msg, ex) => Result.failure(msg, ex),
+    );
   }
 
   @override

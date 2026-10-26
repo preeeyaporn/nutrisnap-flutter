@@ -55,6 +55,13 @@ void main() async {
     geminiService: geminiService,
   );
 
+  // ซิงค์อัปเดตข้อมูลโภชนาการตามกรอบ GDA ล่าสุดให้รายการในเครื่องอัตโนมัติ (โดยคงรายการที่ผู้ใช้แก้ไขเอง is_user_edited = true ไว้)
+  try {
+    await nutrisnapRepository.getAllFoodItems();
+  } catch (e) {
+    debugPrint('Initial GDA sync notice: $e');
+  }
+
   runApp(
     NutriSnapApp(authService: authService, repository: nutrisnapRepository),
   );

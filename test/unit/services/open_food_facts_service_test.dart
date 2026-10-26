@@ -106,5 +106,46 @@ void main() {
       expect(result.dataOrNull?.length, 1);
       expect(result.dataOrNull?.first.name, 'Soy Milk');
     });
+
+    test('Special barcode (8851717900907) returns verified Dutchie 0% Fat 125g Yogurt data', () async {
+      final result = await offService.getProductByBarcode('8851717900907');
+
+      expect(result.isSuccess, isTrue);
+      final item = result.dataOrNull!;
+      expect(item.name, contains('สตรอเบอร์รี่'));
+      expect(item.brand, contains('ดัชชี่'));
+      expect(item.calories, 80.0);
+      expect(item.protein, 3.0);
+      expect(item.carbohydrates, 17.0);
+      expect(item.fat, 0.0);
+      expect(item.servingSize, contains('125 กรัม'));
+    });
+
+    test('getProductByBarcode prioritizes per-serving nutrients and applies Atwater fallback when energy is missing', () async {
+      when(() => mockApi.get(any())).thenAnswer((_) async {
+        return Result.success({
+          'status': 1,
+          'product': {
+            'product_name': 'Zero Calorie Key Bar',
+            'serving_size': '50g',
+            'nutriments': {
+              'energy-kcal_100g': 0,
+              'proteins_serving': 10.0,
+              'carbohydrates_serving': 20.0,
+              'fat_serving': 5.0,
+            },
+          }
+        });
+      });
+
+      final result = await offService.getProductByBarcode('9988776655443');
+      expect(result.isSuccess, isTrue);
+      final item = result.dataOrNull!;
+      // Atwater: 10*4 + 20*4 + 5*9 = 40 + 80 + 45 = 165 kcal
+      expect(item.calories, 165.0);
+      expect(item.protein, 10.0);
+      expect(item.carbohydrates, 20.0);
+      expect(item.fat, 5.0);
+    });
   });
 }
