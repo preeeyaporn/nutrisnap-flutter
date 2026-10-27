@@ -45,34 +45,109 @@ class NutritionProvider extends ChangeNotifier {
 
   int get unsyncedCount => _recentScans.where((item) => !item.isSynced).length;
 
-  double get totalCaloriesToday {
-    final now = DateTime.now();
-    return _recentScans
-        .where((item) =>
-            item.scannedAt.year == now.year &&
-            item.scannedAt.month == now.month &&
-            item.scannedAt.day == now.day)
-        .fold(0.0, (sum, item) => sum + item.calories);
+  /// คำนวณแคลอรี่รวมของวันนี้
+  double get totalCaloriesToday => getTotalCaloriesForDate(DateTime.now());
+
+  /// คำนวณสารอาหารหลักรวมของวันนี้
+  Map<String, double> get totalMacrosToday => getTotalMacrosForDate(DateTime.now());
+
+  /// สรุปจำนวนมื้ออาหารของวันที่กำหนด โดยสามารถแยกตัวกรองที่มา ('all', 'barcode_scan', 'ai_vision')
+  int getMealCountForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    if (source != null && source != 'all') {
+      return dayItems.where((item) => item.source == source).length;
+    }
+    return dayItems.length;
   }
 
-  Map<String, double> get totalMacrosToday {
-    final now = DateTime.now();
-    final todayItems = _recentScans.where((item) =>
-        item.scannedAt.year == now.year &&
-        item.scannedAt.month == now.month &&
-        item.scannedAt.day == now.day);
+  /// สรุปแคลอรี่รวมของวันที่กำหนด โดยสามารถแยกตัวกรองที่มา ('all', 'barcode_scan', 'ai_vision')
+  double getTotalCaloriesForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    final targetItems = (source != null && source != 'all')
+        ? dayItems.where((item) => item.source == source)
+        : dayItems;
+
+    return targetItems.fold<double>(0.0, (sum, item) => sum + item.calories);
+  }
+
+  /// สรุปสารอาหารหลัก (โปรตีน, คาร์บ, ไขมัน) ของวันที่กำหนด แยกตามที่มาได้
+  Map<String, double> getTotalMacrosForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    final targetItems = (source != null && source != 'all')
+        ? dayItems.where((item) => item.source == source)
+        : dayItems;
 
     double protein = 0.0;
     double carbs = 0.0;
     double fat = 0.0;
 
-    for (final item in todayItems) {
+    for (final item in targetItems) {
       protein += item.protein;
       carbs += item.carbohydrates;
       fat += item.fat;
     }
 
     return {'protein': protein, 'carbs': carbs, 'fat': fat};
+  }
+
+  /// ดึงรายการอาหารของวันที่กำหนด ตามตัวกรอง (searchQuery, selectedFilter, sortBy)
+  List<FoodItem> getFilteredScansForDate(DateTime date) {
+    var items = _recentScans
+        .where((item) =>
+            item.scannedAt.year == date.year &&
+            item.scannedAt.month == date.month &&
+            item.scannedAt.day == date.day)
+        .toList();
+
+    // 1. Search Query Filter
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      items = items
+          .where((item) =>
+              item.name.toLowerCase().contains(q) ||
+              item.brand.toLowerCase().contains(q) ||
+              item.barcode.contains(q))
+          .toList();
+    }
+
+    // 2. Category / Source Filter
+    if (_selectedFilter == 'favorites') {
+      items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter != 'all') {
+      items = items.where((item) => item.source == _selectedFilter).toList();
+    }
+
+    // 3. Sorting
+    switch (_sortBy) {
+      case 'oldest':
+        items.sort((a, b) => a.scannedAt.compareTo(b.scannedAt));
+        break;
+      case 'calories':
+        items.sort((a, b) => b.calories.compareTo(a.calories));
+        break;
+      case 'nutriScore':
+        items.sort(
+            (a, b) => (a.nutriScore ?? 'Z').compareTo(b.nutriScore ?? 'Z'));
+        break;
+      case 'newest':
+      default:
+        items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+        break;
+    }
+
+    return items;
   }
 
   Map<String, int> get nutriScoreCounts {

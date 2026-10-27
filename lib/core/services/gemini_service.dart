@@ -90,8 +90,9 @@ class GeminiServiceImpl implements GeminiService {
         return key.trim();
       }
     } catch (_) {}
-    if (ApiConstants.defaultGeminiApiKey.isNotEmpty)
+    if (ApiConstants.defaultGeminiApiKey.isNotEmpty) {
       return ApiConstants.defaultGeminiApiKey;
+    }
     try {
       final key = utf8.decode(
         base64Decode(

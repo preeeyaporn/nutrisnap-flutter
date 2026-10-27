@@ -68,5 +68,86 @@ void main() {
       expect(find.text('นมสดเมจิ รสจืด'), findsOneWidget);
       expect(find.text('140 กิโลแคลอรี่'), findsAtLeast(1));
     });
+
+    testWidgets('filters accurately between barcode and AI vision with automatic calorie summary', (tester) async {
+      final now = DateTime.now();
+      final barcodeItem = FoodItem(
+        id: 'hist_barcode',
+        name: 'นมสดเมจิ รสจืด',
+        brand: 'CP Meiji',
+        calories: 140,
+        protein: 7,
+        carbohydrates: 10,
+        fat: 8,
+        nutriScore: 'A',
+        scannedAt: now,
+        source: 'barcode_scan',
+      );
+      final aiItem = FoodItem(
+        id: 'hist_ai',
+        name: 'ข้าวกะเพราไก่',
+        brand: 'Homemade',
+        calories: 550,
+        protein: 28,
+        carbohydrates: 50,
+        fat: 18,
+        nutriScore: 'B',
+        scannedAt: now,
+        source: 'ai_vision',
+      );
+
+      await localRepo.saveFoodItem(barcodeItem);
+      await localRepo.saveFoodItem(aiItem);
+      await provider.loadRecentScans();
+
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      // Initially 'all' filter: 2 meals, 690 kcal (140 + 550)
+      expect(find.text('บันทึกแล้ว 2 มื้อ'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains('690 กิโลแคลอรี่'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('140 kcal'), findsOneWidget);
+      expect(find.text('550 kcal'), findsOneWidget);
+      expect(find.text('🍴 ทั้งหมด (2)'), findsOneWidget);
+      expect(find.text('║█║ บาร์โค้ด (1)'), findsOneWidget);
+      expect(find.text('✨ กล้อง AI (1)'), findsOneWidget);
+      expect(find.text('นมสดเมจิ รสจืด'), findsOneWidget);
+      expect(find.text('ข้าวกะเพราไก่'), findsOneWidget);
+
+      // Tap '║█║ บาร์โค้ด (1)' filter pill
+      await tester.tap(find.text('║█║ บาร์โค้ด (1)'));
+      await tester.pumpAndSettle();
+
+      // Now filtered to barcode only: 1 meal, 140 kcal
+      expect(find.text('บันทึกแล้ว 1 มื้อ'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains('รวม 140 กิโลแคลอรี่'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('นมสดเมจิ รสจืด'), findsOneWidget);
+      expect(find.text('ข้าวกะเพราไก่'), findsNothing);
+
+      // Tap '✨ กล้อง AI (1)' filter pill
+      await tester.tap(find.text('✨ กล้อง AI (1)'));
+      await tester.pumpAndSettle();
+
+      // Now filtered to AI camera only: 1 meal, 550 kcal
+      expect(find.text('บันทึกแล้ว 1 มื้อ'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains('รวม 550 กิโลแคลอรี่'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('นมสดเมจิ รสจืด'), findsNothing);
+      expect(find.text('ข้าวกะเพราไก่'), findsOneWidget);
+    });
   });
 }

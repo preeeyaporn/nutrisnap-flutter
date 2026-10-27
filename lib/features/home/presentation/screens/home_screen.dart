@@ -313,20 +313,13 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryCard(BuildContext context) {
-    final recentScans = context.watch<NutritionProvider>().recentScans;
-    final mealsCount = recentScans.length;
-    final totalCalories = recentScans
-        .fold<double>(0, (sum, item) => sum + item.calories)
-        .toInt();
-    final totalProtein = recentScans
-        .fold<double>(0, (sum, item) => sum + item.protein)
-        .toInt();
-    final totalCarbs = recentScans
-        .fold<double>(0, (sum, item) => sum + item.carbohydrates)
-        .toInt();
-    final totalFat = recentScans
-        .fold<double>(0, (sum, item) => sum + item.fat)
-        .toInt();
+    final provider = context.watch<NutritionProvider>();
+    final mealsCount = provider.getMealCountForDate(DateTime.now());
+    final totalCalories = provider.getTotalCaloriesForDate(DateTime.now()).toInt();
+    final macros = provider.getTotalMacrosForDate(DateTime.now());
+    final totalProtein = (macros['protein'] ?? 0.0).toInt();
+    final totalCarbs = (macros['carbs'] ?? 0.0).toInt();
+    final totalFat = (macros['fat'] ?? 0.0).toInt();
 
     return Container(
       padding: const EdgeInsets.all(20),

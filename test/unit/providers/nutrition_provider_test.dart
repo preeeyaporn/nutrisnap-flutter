@@ -98,5 +98,72 @@ void main() {
       expect(provider.currentProduct, isNull);
       expect(provider.scanStatus, ScanStatus.idle);
     });
+
+    test('getMealCountForDate and getTotalCaloriesForDate summarize accurately by date and source', () async {
+      final dateA = DateTime(2026, 10, 27, 12, 0);
+      final dateB = DateTime(2026, 10, 26, 10, 0);
+
+      final barcodeMeal = FoodItem(
+        id: 'f_barcode',
+        name: 'นมถั่วเหลือง',
+        calories: 120,
+        protein: 7,
+        carbohydrates: 12,
+        fat: 4,
+        source: 'barcode_scan',
+        scannedAt: dateA,
+      );
+      final aiMeal = FoodItem(
+        id: 'f_ai',
+        name: 'ส้มตำไทย',
+        calories: 180,
+        protein: 4,
+        carbohydrates: 25,
+        fat: 2,
+        source: 'ai_vision',
+        scannedAt: dateA,
+      );
+      final prevDayMeal = FoodItem(
+        id: 'f_prev',
+        name: 'ต้มยำกุ้ง',
+        calories: 300,
+        protein: 20,
+        carbohydrates: 10,
+        fat: 8,
+        source: 'ai_vision',
+        scannedAt: dateB,
+      );
+
+      when(
+        () => mockRepo.getRecentScans(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => Result.success([barcodeMeal, aiMeal, prevDayMeal]));
+
+      await provider.loadRecentScans();
+
+      // For dateA:
+      // All: 2 meals, 300 kcal (120 + 180)
+      expect(provider.getMealCountForDate(dateA), 2);
+      expect(provider.getTotalCaloriesForDate(dateA), 300.0);
+
+      // Barcode filter: 1 meal, 120 kcal
+      expect(provider.getMealCountForDate(dateA, source: 'barcode_scan'), 1);
+      expect(provider.getTotalCaloriesForDate(dateA, source: 'barcode_scan'), 120.0);
+
+      // AI Camera filter: 1 meal, 180 kcal
+      expect(provider.getMealCountForDate(dateA, source: 'ai_vision'), 1);
+      expect(provider.getTotalCaloriesForDate(dateA, source: 'ai_vision'), 180.0);
+
+      // For dateB:
+      expect(provider.getMealCountForDate(dateB), 1);
+      expect(provider.getTotalCaloriesForDate(dateB), 300.0);
+      expect(provider.getMealCountForDate(dateB, source: 'barcode_scan'), 0);
+      expect(provider.getTotalCaloriesForDate(dateB, source: 'barcode_scan'), 0.0);
+
+      // Filtered scans for dateA with search & source
+      provider.setSelectedFilter('barcode_scan');
+      final filteredBarcode = provider.getFilteredScansForDate(dateA);
+      expect(filteredBarcode.length, 1);
+      expect(filteredBarcode.first.name, 'นมถั่วเหลือง');
+    });
   });
 }

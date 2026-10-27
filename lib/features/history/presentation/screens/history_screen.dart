@@ -126,19 +126,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
         builder: (context, provider, child) {
           final hasRealData = provider.recentScans.isNotEmpty;
           final isDemo = !hasRealData;
-          final items = provider.filteredScans;
 
-          final allCount = isDemo ? 4 : provider.recentScans.length;
-          final barcodeCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'barcode_scan').length;
-          final aiCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'ai_vision').length;
+          // สรุปจำนวนมื้อและแคลอรี่รวมของวันนั้น โดยแยกตามที่มา
+          final allCount = isDemo ? 4 : provider.getMealCountForDate(_selectedDate);
+          final barcodeCount = isDemo ? 2 : provider.getMealCountForDate(_selectedDate, source: 'barcode_scan');
+          final aiCount = isDemo ? 2 : provider.getMealCountForDate(_selectedDate, source: 'ai_vision');
+
+          final allCalories = isDemo ? 1760 : provider.getTotalCaloriesForDate(_selectedDate).toInt();
+          final barcodeCalories = isDemo ? 370 : provider.getTotalCaloriesForDate(_selectedDate, source: 'barcode_scan').toInt();
+          final aiCalories = isDemo ? 1080 : provider.getTotalCaloriesForDate(_selectedDate, source: 'ai_vision').toInt();
+
+          final items = isDemo ? <FoodItem>[] : provider.getFilteredScansForDate(_selectedDate);
 
           final currentDisplayCount = isDemo
               ? (provider.selectedFilter == 'barcode_scan' || provider.selectedFilter == 'ai_vision' ? 2 : 4)
               : items.length;
 
           final totalCalories = isDemo
-              ? 1760
-              : (provider.totalCaloriesToday == 0 ? 1760 : provider.totalCaloriesToday.toInt());
+              ? (provider.selectedFilter == 'barcode_scan'
+                  ? 370
+                  : (provider.selectedFilter == 'ai_vision' ? 1080 : 1760))
+              : (provider.selectedFilter == 'barcode_scan'
+                  ? barcodeCalories
+                  : (provider.selectedFilter == 'ai_vision' ? aiCalories : allCalories));
 
           return CustomScrollView(
             slivers: [
@@ -221,20 +231,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             Flexible(
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.calendar_today_rounded, color: Color(0xFF7C3AED), size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDisplayDate(_selectedDate),
-                                      style: AppTypography.heading3.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () async {
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: _selectedDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime(2035),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _selectedDate = picked;
+                                      });
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.calendar_today_rounded, color: Color(0xFF7C3AED), size: 16),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _formatDisplayDate(_selectedDate),
+                                          style: AppTypography.heading3.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 20),
+                                      ],
                                     ),
-                                    const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 20),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -248,6 +277,184 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Daily Source Breakdown Cards (Barcode & AI Camera Quick Selector)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                provider.setSelectedFilter(
+                                  provider.selectedFilter == 'barcode_scan' ? 'all' : 'barcode_scan',
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: provider.selectedFilter == 'barcode_scan'
+                                      ? const Color(0xFFF3E8FF)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: provider.selectedFilter == 'barcode_scan'
+                                        ? const Color(0xFF7C3AED)
+                                        : const Color(0xFFE2E8F0),
+                                    width: provider.selectedFilter == 'barcode_scan' ? 1.5 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.qr_code_2_rounded, size: 15, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'บาร์โค้ด',
+                                              style: AppTypography.chipText.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF1E1B4B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '$barcodeCount มื้อ',
+                                            style: AppTypography.chipText.copyWith(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF7C3AED),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${NumberFormat('#,###').format(barcodeCalories)} kcal',
+                                      style: AppTypography.heading3.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                provider.setSelectedFilter(
+                                  provider.selectedFilter == 'ai_vision' ? 'all' : 'ai_vision',
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: provider.selectedFilter == 'ai_vision'
+                                      ? const Color(0xFFF3E8FF)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: provider.selectedFilter == 'ai_vision'
+                                        ? const Color(0xFF7C3AED)
+                                        : const Color(0xFFE2E8F0),
+                                    width: provider.selectedFilter == 'ai_vision' ? 1.5 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.auto_awesome, size: 15, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'กล้อง AI',
+                                              style: AppTypography.chipText.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF1E1B4B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '$aiCount มื้อ',
+                                            style: AppTypography.chipText.copyWith(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF7C3AED),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${NumberFormat('#,###').format(aiCalories)} kcal',
+                                      style: AppTypography.heading3.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
 
@@ -331,7 +538,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // 2. Food Items List / Empty State
               items.isEmpty
                   ? SliverToBoxAdapter(
-                      child: _buildDemoOrEmptyState(context, provider),
+                      child: isDemo
+                          ? _buildDemoOrEmptyState(context, provider)
+                          : _buildEmptyDateState(context, provider),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -713,11 +922,93 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  Widget _buildEmptyDateState(BuildContext context, NutritionProvider provider) {
+    final filterName = provider.selectedFilter == 'barcode_scan'
+        ? 'จากบาร์โค้ด'
+        : (provider.selectedFilter == 'ai_vision' ? 'จากกล้อง AI' : '');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF3E8FF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.no_meals_rounded,
+                size: 32,
+                color: Color(0xFF7C3AED),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'ไม่มีบันทึกมื้ออาหาร$filterNameในวันนี้',
+              style: AppTypography.heading3.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'สามารถสแกนบาร์โค้ดหรือถ่ายภาพอาหารด้วย AI เพื่อบันทึกมื้อนี้ได้ทันที',
+              style: AppTypography.bodySmall.copyWith(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (provider.selectedFilter != 'all') ...[
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: () => provider.setSelectedFilter('all'),
+                icon: const Icon(Icons.clear_all_rounded, size: 16),
+                label: const Text('ดูอาหารทั้งหมดของวันนี้'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF7C3AED),
+                  side: const BorderSide(color: Color(0xFF7C3AED)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   String _formatDisplayDate(DateTime date) {
     final now = DateTime.now();
+    const months = [
+      'ม.ค.',
+      'ก.พ.',
+      'มี.ค.',
+      'เม.ย.',
+      'พ.ค.',
+      'มิ.ย.',
+      'ก.ค.',
+      'ส.ค.',
+      'ก.ย.',
+      'ต.ค.',
+      'พ.ย.',
+      'ธ.ค.',
+    ];
+    final monthStr = months[date.month - 1];
     if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return 'วันนี้, ${date.day} ต.ค.';
+      return 'วันนี้, ${date.day} $monthStr';
     }
-    return '${date.day} ต.ค. ${date.year + 543}';
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+      return 'เมื่อวาน, ${date.day} $monthStr';
+    }
+    return '${date.day} $monthStr ${date.year + 543}';
   }
 }
