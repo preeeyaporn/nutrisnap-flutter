@@ -98,6 +98,25 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
   }
 
   Future<void> _handleSaveAndNavigate() async {
+    final isNotFood = _currentAnalysis.foodName.contains('ไม่พบอาหาร') ||
+        (_currentAnalysis.calories == 0 &&
+            _currentAnalysis.protein == 0 &&
+            _currentAnalysis.carbohydrates == 0 &&
+            _currentAnalysis.fat == 0);
+
+    if (isNotFood) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Color(0xFFEF4444),
+          content: Text(
+            'ไม่สามารถบันทึกได้เนื่องจากไม่พบอาหารในภาพ กรุณาถ่ายใหม่หรือระบุชื่ออาหารในช่องแก้ไขด้านบน',
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final provider = context.read<NutritionProvider>();
     final foodItem = await provider.saveCurrentAiMeal(
       customAnalysis: _currentAnalysis,
@@ -147,6 +166,8 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
     final proteinRatio = totalMacros > 0 ? (protein * 4) / totalMacros : 0.0;
     final carbsRatio = totalMacros > 0 ? (carbs * 4) / totalMacros : 0.0;
     final fatRatio = totalMacros > 0 ? (fat * 9) / totalMacros : 0.0;
+    final isNotFood = _currentAnalysis.foodName.contains('ไม่พบอาหาร') ||
+        (calories == 0 && totalMacros == 0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -256,28 +277,32 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
             _buildCorrectionCard(),
             const SizedBox(height: 14),
 
-            // Warning Banner (Peach/Orange background from Figma Screen 8)
+            // Warning Banner (Peach/Orange background from Figma Screen 8, or Red when not food)
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF7ED),
+                color: isNotFood ? const Color(0xFFFEF2F2) : const Color(0xFFFFF7ED),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFED7AA)),
+                border: Border.all(
+                  color: isNotFood ? const Color(0xFFFECACA) : const Color(0xFFFED7AA),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.info_rounded,
-                    color: Color(0xFFEA580C),
+                  Icon(
+                    isNotFood ? Icons.no_food_rounded : Icons.info_rounded,
+                    color: isNotFood ? const Color(0xFFDC2626) : const Color(0xFFEA580C),
                     size: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'ข้อมูลโภชนาการเป็นค่าประมาณ ค่าจริงอาจแตกต่างกันไปตามปริมาณน้ำมันปรุงอาหาร อัตราส่วนเครื่องปรุง และสัดส่วนวัตถุดิบ',
+                      isNotFood
+                          ? 'ระบบไม่พบรายการอาหารในภาพ กรุณาเล็งกล้องไปที่อาหารแล้วถ่ายภาพใหม่อีกครั้ง หรือพิมพ์ชื่ออาหารจริงในช่อง "ไม่ใช่เมนูที่คุณสั่งใช่ไหม?" ด้านบนเพื่อให้ AI คำนวณสารอาหารให้ใหม่'
+                          : 'ข้อมูลโภชนาการเป็นค่าประมาณ ค่าจริงอาจแตกต่างกันไปตามปริมาณน้ำมันปรุงอาหาร อัตราส่วนเครื่องปรุง และสัดส่วนวัตถุดิบ',
                       style: AppTypography.bodySmall.copyWith(
-                        color: const Color(0xFF9A3412),
+                        color: isNotFood ? const Color(0xFF991B1B) : const Color(0xFF9A3412),
                         fontSize: 11.5,
                         height: 1.45,
                       ),
