@@ -19,7 +19,12 @@ abstract class FirebaseAuthService {
     String? displayName,
   });
   Future<Result<UserModel>> signInAnonymously();
-  Future<Result<UserModel>> signInWithGoogle();
+  Future<Result<UserModel>> signInWithGoogle({
+    String? customEmail,
+    String? customDisplayName,
+    String? customPhotoUrl,
+  });
+  Future<List<UserModel>> getSavedGoogleUsers();
   Future<Result<void>> signOut();
   Future<Result<UserModel>> updateProfile({
     String? displayName,
@@ -310,9 +315,66 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     return Result.success(guest);
   }
 
+  static final List<UserModel> _savedGoogleAccounts = [
+    UserModel(
+      id: 'usr_google_preeyapornnr',
+      email: 'preeyapornnr@gmail.com',
+      displayName: 'ปรียาภรณ์ นาคสมบูรณ์',
+      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime(2026, 1, 1),
+    ),
+  ];
+
   @override
-  Future<Result<UserModel>> signInWithGoogle() async {
+  Future<List<UserModel>> getSavedGoogleUsers() async {
+    final list = <UserModel>[..._savedGoogleAccounts];
+    for (final u in _registeredUsers.values) {
+      if (u.id.startsWith('usr_google_') && !list.any((x) => x.email == u.email)) {
+        list.add(u);
+      }
+    }
+    return list;
+  }
+
+  @override
+  Future<Result<UserModel>> signInWithGoogle({
+    String? customEmail,
+    String? customDisplayName,
+    String? customPhotoUrl,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 300));
+
+    // 1. If custom credentials provided (from Google Account Chooser or test)
+    if (customEmail != null && customEmail.trim().isNotEmpty) {
+      final normalizedEmail = customEmail.trim().toLowerCase();
+      final name = (customDisplayName != null && customDisplayName.trim().isNotEmpty)
+          ? customDisplayName.trim()
+          : (normalizedEmail.contains('@') ? normalizedEmail.split('@').first : normalizedEmail);
+
+      final user = UserModel(
+        id: 'usr_google_${normalizedEmail.replaceAll('@', '_').replaceAll('.', '_')}',
+        email: normalizedEmail,
+        displayName: name,
+        photoUrl: customPhotoUrl ?? 'https://lh3.googleusercontent.com/a/default-user',
+        isAnonymous: false,
+        dailyCalorieTarget: 2000.0,
+        createdAt: DateTime.now(),
+      );
+
+      _registeredUsers[normalizedEmail] = user;
+      if (!_savedGoogleAccounts.any((x) => x.email == normalizedEmail)) {
+        _savedGoogleAccounts.add(user);
+      }
+      await _persistUser(user);
+
+      _currentUser = user;
+      _authStateController.add(_currentUser);
+      return Result.success(user);
+    }
+
+    // 2. Default Google account (ปรียาภรณ์ นาคสมบูรณ์) when called with no arguments
     const googleEmail = 'preeyapornnr@gmail.com';
     final user = UserModel(
       id: 'usr_google_preeyapornnr',

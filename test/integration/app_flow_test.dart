@@ -58,6 +58,11 @@ void main() {
       final googleBtn = find.text('เข้าสู่ระบบด้วย Google');
       await tester.ensureVisible(googleBtn);
       await tester.tap(googleBtn);
+      await tester.pumpAndSettle();
+
+      final accountItem = find.text('ปรียาภรณ์ นาคสมบูรณ์');
+      expect(accountItem, findsOneWidget);
+      await tester.tap(accountItem);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pump(const Duration(milliseconds: 600));
@@ -206,6 +211,11 @@ void main() {
         final googleBtn = find.text('เข้าสู่ระบบด้วย Google');
         await tester.ensureVisible(googleBtn);
         await tester.tap(googleBtn);
+        await tester.pumpAndSettle();
+
+        final accountItem = find.text('ปรียาภรณ์ นาคสมบูรณ์');
+        expect(accountItem, findsOneWidget);
+        await tester.tap(accountItem);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 600));

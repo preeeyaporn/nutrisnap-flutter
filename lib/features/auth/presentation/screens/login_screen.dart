@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/register_screen.dart';
 import 'package:nutrisnap/features/home/presentation/screens/main_shell_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,9 +14,74 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  Future<void> _handleGoogleLogin() async {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleEmailLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.signInWithGoogle();
+    final success = await authProvider.signInWithEmail(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'ยินดีต้อนรับกลับ ${authProvider.currentUser?.displayName ?? ""}',
+            style: AppTypography.chipText.copyWith(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainShellScreen()),
+        (route) => false,
+      );
+    } else {
+      final error = authProvider.errorMessage ?? 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error,
+            style: AppTypography.chipText.copyWith(color: Colors.white),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDirectGoogleLogin({
+    String? email,
+    String? displayName,
+  }) async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signInWithGoogle(
+      email: email,
+      displayName: displayName,
+    );
 
     if (!mounted) return;
 
@@ -28,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'เข้าสู่ระบบด้วย Google สำเร็จ ยินดีต้อนรับ ${authProvider.currentUser?.displayName ?? "ปรียาภรณ์ นาคสมบูรณ์"}',
+                  'เข้าสู่ระบบด้วย Google สำเร็จ ยินดีต้อนรับ ${authProvider.currentUser?.displayName ?? "ผู้ใช้งาน"}',
                   style: AppTypography.chipText.copyWith(color: Colors.white),
                 ),
               ),
@@ -46,8 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
         (route) => false,
       );
     } else {
-      final error =
-          authProvider.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ';
+      final error = authProvider.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -62,6 +127,250 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     }
+  }
+
+  void _showGoogleAccountPicker() async {
+    final authProvider = context.read<AuthProvider>();
+    final savedUsers = await authProvider.getSavedGoogleUsers();
+
+    if (!mounted) return;
+
+    final newEmailController = TextEditingController();
+    final newNameController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle Bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Google Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildGoogleLogo(size: 22),
+                        const SizedBox(width: 8),
+                        const Flexible(
+                          child: Text(
+                            'ลงชื่อเข้าใช้ด้วย Google',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'เลือกบัญชี Google เพื่อดำเนินการต่อยัง NutriSnap',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: const Color(0xFF64748B),
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // List Saved Accounts
+                    ...savedUsers.map((user) {
+                      final initial = (user.displayName.isNotEmpty)
+                          ? user.displayName[0].toUpperCase()
+                          : 'G';
+                      return InkWell(
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          _handleDirectGoogleLogin(
+                            email: user.email,
+                            displayName: user.displayName,
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            borderRadius: BorderRadius.circular(16),
+                            color: const Color(0xFFF8FAFC),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: const Color(0xFF2563EB),
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user.displayName,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      user.email ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const Divider(height: 24, color: Color(0xFFE2E8F0)),
+
+                    // "Use Another Account" custom input
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF2563EB), size: 20),
+                              SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'ใช้บัญชี Google อื่นของคุณ',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: newEmailController,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: InputDecoration(
+                              hintText: 'อีเมล Google (เช่น yourname@gmail.com)',
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: newNameController,
+                            decoration: InputDecoration(
+                              hintText: 'ชื่อ-นามสกุล ของคุณ',
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              final email = newEmailController.text.trim();
+                              final name = newNameController.text.trim();
+                              if (email.isEmpty || !email.contains('@')) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('กรุณากรอกอีเมล Google ให้ถูกต้อง')),
+                                );
+                                return;
+                              }
+                              Navigator.of(ctx).pop();
+                              _handleDirectGoogleLogin(
+                                email: email,
+                                displayName: name.isNotEmpty ? name : email.split('@').first,
+                              );
+                            },
+                            child: const Text('เข้าสู่ระบบด้วยบัญชีนี้'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _handleGuestLogin() async {
@@ -109,8 +418,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 // App Brand Logo with Gradient
                 Center(
                   child: Container(
-                    width: 86,
-                    height: 86,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
@@ -126,12 +435,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Icon(
                         Icons.eco_rounded,
                         color: Colors.white,
-                        size: 46,
+                        size: 42,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Title & Subtitle
                 Text(
@@ -152,143 +461,260 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
-                // Google-First Login Card
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Google Account Badge Card
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                // Google Sign-In Button (Standard Modern App Style)
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _showGoogleAccountPicker,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF1E293B),
+                      elevation: 1.5,
+                      shadowColor: Colors.black.withValues(alpha: 0.08),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(
+                          color: Color(0xFFCBD5E1),
+                          width: 1.2,
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Color(0xFF4285F4), Color(0xFF34A853)],
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
+                      ),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFF4285F4),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildGoogleLogo(size: 22),
+                              const SizedBox(width: 12),
+                              Flexible(
                                 child: Text(
-                                  'P',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
+                                  'เข้าสู่ระบบด้วย Google',
+                                  style: AppTypography.chipText.copyWith(
+                                    color: const Color(0xFF1E293B),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'ปรียาภรณ์ นาคสมบูรณ์',
-                                    style: AppTypography.heading3.copyWith(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'preeyapornnr@gmail.com',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      fontSize: 12.5,
-                                      color: const Color(0xFF64748B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.verified_user_rounded,
-                              color: Color(0xFF2563EB),
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Prominent Google Sign-In Button
-                      SizedBox(
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleGoogleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF1E293B),
-                            elevation: 1.5,
-                            shadowColor: Colors.black.withValues(alpha: 0.08),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(26),
-                              side: const BorderSide(
-                                color: Color(0xFFCBD5E1),
-                                width: 1.2,
-                              ),
-                            ),
+                            ],
                           ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Color(0xFF4285F4),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    _buildGoogleLogo(),
-                                    const SizedBox(width: 10),
-                                    Flexible(
-                                      child: Text(
-                                        'เข้าสู่ระบบด้วย Google',
-                                        style: AppTypography.chipText.copyWith(
-                                          color: const Color(0xFF1E293B),
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Guest Mode Button
+                // Divider: "หรือเข้าสู่ระบบด้วยอีเมล"
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'หรือเข้าสู่ระบบด้วยอีเมล',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: const Color(0xFF94A3B8),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Email & Password Form Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Email Field
+                        Text(
+                          'อีเมลของคุณ',
+                          style: AppTypography.chipText.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            hintText: 'example@email.com',
+                            prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'กรุณากรอกอีเมล';
+                            }
+                            if (!value.contains('@')) {
+                              return 'รูปแบบอีเมลไม่ถูกต้อง';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Password Field
+                        Text(
+                          'รหัสผ่าน',
+                          style: AppTypography.chipText.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            hintText: 'รหัสผ่านของคุณ',
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF94A3B8)),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF94A3B8),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'กรุณากรอกรหัสผ่าน';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Login Button
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: isLoading ? null : _handleEmailLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'เข้าสู่ระบบ',
+                                    style: AppTypography.chipText.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Register Navigation Link
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'ยังไม่มีบัญชีใช่หรือไม่? ',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: const Color(0xFF64748B),
+                        fontSize: 13,
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'สมัครสมาชิกทันที',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+
+                // Guest Mode Button (Secured & Restricted)
                 SizedBox(
                   height: 46,
                   child: OutlinedButton(
@@ -332,10 +758,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildGoogleLogo() {
+  Widget _buildGoogleLogo({double size = 22}) {
     return Container(
-      width: 22,
-      height: 22,
+      width: size,
+      height: size,
       decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
@@ -344,7 +770,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Text(
           'G',
           style: TextStyle(
-            fontSize: 17,
+            fontSize: size * 0.77,
             fontWeight: FontWeight.w900,
             fontFamily: 'Roboto',
             foreground: Paint()
@@ -356,7 +782,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Color(0xFF34A853), // Green
                 ],
                 stops: [0.0, 0.35, 0.7, 1.0],
-              ).createShader(const Rect.fromLTWH(0, 0, 22, 22)),
+              ).createShader(Rect.fromLTWH(0, 0, size, size)),
           ),
         ),
       ),

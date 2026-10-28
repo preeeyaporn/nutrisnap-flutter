@@ -103,12 +103,24 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  Future<bool> signInWithGoogle() async {
+  Future<List<UserModel>> getSavedGoogleUsers() async {
+    return _authService.getSavedGoogleUsers();
+  }
+
+  Future<bool> signInWithGoogle({
+    String? email,
+    String? displayName,
+    String? photoUrl,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _authService.signInWithGoogle();
+    final result = await _authService.signInWithGoogle(
+      customEmail: email,
+      customDisplayName: displayName,
+      customPhotoUrl: photoUrl,
+    );
     _isLoading = false;
 
     return result.when(
