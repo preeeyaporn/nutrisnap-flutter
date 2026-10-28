@@ -734,15 +734,11 @@ class HomeScreen extends StatelessWidget {
                         width: 58,
                         height: 58,
                         color: Colors.white,
-                        child:
-                            item.imageUrl != null &&
-                                item.imageUrl!.startsWith('http')
-                            ? Image.network(
-                                item.imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => _buildMealIcon(item),
-                              )
-                            : _buildMealIcon(item),
+                        child: Image.network(
+                          item.effectiveImageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _buildMealIcon(item),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -778,7 +774,7 @@ class HomeScreen extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  item.source == 'barcode_scan'
+                                  item.isBarcode
                                       ? Icons.qr_code_rounded
                                       : Icons.auto_awesome,
                                   size: 11,
@@ -787,7 +783,7 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    item.source == 'barcode_scan'
+                                    item.isBarcode
                                         ? 'บาร์โค้ด'
                                         : 'AI ประมาณการ',
                                     style: AppTypography.chipText.copyWith(

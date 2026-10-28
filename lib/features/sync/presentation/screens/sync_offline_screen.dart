@@ -163,11 +163,6 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
 
                 const SizedBox(height: 20),
 
-                // Capabilities List
-                _buildCapabilitiesSection(),
-
-                const SizedBox(height: 20),
-
                 // Cached Items Strip
                 _buildCachedItemsSection(provider, totalCount),
 
@@ -314,110 +309,8 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
     );
   }
 
-  Widget _buildCapabilitiesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Text(
-                'ความสามารถของอุปกรณ์ขณะออฟไลน์',
-                style: AppTypography.heading3.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'ระบบสำรองภายในเครื่อง V2',
-              style: AppTypography.bodySmall.copyWith(
-                color: const Color(0xFF7C3AED),
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCapabilityTile(
-          icon: Icons.check_circle_rounded,
-          iconColor: const Color(0xFF8B5CF6),
-          bgColor: const Color(0xFFF3E8FF),
-          title: 'บันทึกมื้ออาหารแบบออฟไลน์',
-          subtitle: 'เปิดใช้งานอยู่ (จัดเก็บภายใน Hive DB ในเครื่อง)',
-        ),
-        const SizedBox(height: 8),
-        _buildCapabilityTile(
-          icon: Icons.qr_code_scanner_rounded,
-          iconColor: const Color(0xFF8B5CF6),
-          bgColor: const Color(0xFFF3E8FF),
-          title: 'แคชข้อมูลบาร์โค้ด',
-          subtitle: 'ใช้งานได้สำหรับอาหารทั่วไปและรายการที่เคยบันทึก',
-        ),
-        const SizedBox(height: 8),
-        _buildCapabilityTile(
-          icon: Icons.hourglass_top_rounded,
-          iconColor: const Color(0xFF8B5CF6),
-          bgColor: const Color(0xFFF3E8FF),
-          title: 'Gemini AI & ซิงค์ข้อมูลคลาวด์',
-          subtitle: 'เข้าคิวรอจนกว่าจะเชื่อมต่ออินเทอร์เน็ตได้',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCapabilityTile({
-    required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.heading3.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCachedItemsSection(NutritionProvider provider, int totalCount) {
-    final recentItems = provider.recentScans.take(3).toList();
+    final recentItems = provider.recentScans;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,7 +321,7 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             Flexible(
               child: Row(
                 children: [
-                  const Icon(Icons.list_alt_rounded, size: 18, color: Color(0xFF7C3AED)),
+                  const Icon(Icons.inventory_2_rounded, size: 18, color: Color(0xFF7C3AED)),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -442,66 +335,214 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              '$totalCount มื้อ • 1.8 MB',
+              '$totalCount มื้อ • ${((totalCount * 180) / 1024).toStringAsFixed(1)} MB',
               style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3E8FF).withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              ...recentItems.map((item) => Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 72,
-                    height: 72,
+        if (recentItems.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.cloud_queue_rounded, size: 36, color: Color(0xFFCBD5E1)),
+                const SizedBox(height: 8),
+                Text(
+                  'ยังไม่มีรายการอาหารที่บันทึกไว้ในเครื่อง',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 154,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: recentItems.length + 1,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                if (index == recentItems.length) {
+                  return Container(
+                    width: 104,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      image: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(item.imageUrl!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFDDD6FE)),
                     ),
-                    child: item.imageUrl == null || item.imageUrl!.isEmpty
-                        ? const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28)
-                        : null,
-                  )),
-              Expanded(
-                child: Container(
-                  height: 72,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: widget.onGoToHistory,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF3E8FF),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add, color: Color(0xFF7C3AED), size: 20),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '+ เพิ่มบันทึก',
+                            style: AppTypography.chipText.copyWith(
+                              color: const Color(0xFF7C3AED),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final item = recentItems[index];
+                final isAi = item.isAi;
+                return Container(
+                  width: 130,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFDDD6FE)),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.add, color: Color(0xFF7C3AED), size: 20),
-                      const SizedBox(height: 2),
-                      Text(
-                        '+ เพิ่มบันทึก',
-                        style: AppTypography.chipText.copyWith(
-                          color: const Color(0xFF7C3AED),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            child: Image.network(
+                              item.effectiveImageUrl,
+                              width: 130,
+                              height: 82,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 130,
+                                height: 82,
+                                color: const Color(0xFFF1F5F9),
+                                child: const Icon(
+                                  Icons.fastfood_rounded,
+                                  color: Color(0xFF7C3AED),
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: item.isSynced ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    item.isSynced ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                                    color: Colors.white,
+                                    size: 9,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    item.isSynced ? 'ซิงค์แล้ว' : 'รอซิงค์',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 6,
+                            left: 6,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isAi ? Icons.auto_awesome : Icons.qr_code_2,
+                                    color: Colors.white,
+                                    size: 9,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    isAi ? 'AI' : 'บาร์โค้ด',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: AppTypography.heading3.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${item.calories.toInt()} kcal',
+                              style: AppTypography.bodySmall.copyWith(
+                                fontSize: 11,
+                                color: const Color(0xFF7C3AED),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }

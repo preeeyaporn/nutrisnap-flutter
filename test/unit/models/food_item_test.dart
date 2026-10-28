@@ -123,5 +123,36 @@ void main() {
       final sumRatios = sampleFood.proteinRatio + sampleFood.carbsRatio + sampleFood.fatRatio;
       expect(sumRatios, closeTo(1.0, 0.001));
     });
+
+    test('isAi and isBarcode accurately identify food item source including gemini_vision', () {
+      final aiFood = FoodItem(
+        id: 'ai_123',
+        name: 'ปีกไก่ทอด',
+        calories: 650,
+        protein: 30,
+        carbohydrates: 10,
+        fat: 40,
+        source: 'gemini_vision',
+        scannedAt: now,
+      );
+      expect(aiFood.isAi, isTrue);
+      expect(aiFood.isBarcode, isFalse);
+      expect(aiFood.effectiveImageUrl, contains('unsplash.com'));
+
+      final barcodeFood = FoodItem(
+        id: 'off_8850123',
+        barcode: '8850123',
+        name: 'มันฝรั่งทอดกรอบ',
+        calories: 220,
+        protein: 3,
+        carbohydrates: 25,
+        fat: 12,
+        source: 'barcode_scan',
+        scannedAt: now,
+      );
+      expect(barcodeFood.isAi, isFalse);
+      expect(barcodeFood.isBarcode, isTrue);
+      expect(barcodeFood.effectiveImageUrl, contains('unsplash.com'));
+    });
   });
 }

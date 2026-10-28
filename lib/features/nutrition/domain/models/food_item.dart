@@ -167,7 +167,9 @@ class FoodItem {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      source: map['source']?.toString() ?? 'barcode_scan',
+      source: map['source'] == 'gemini_vision'
+          ? 'ai_vision'
+          : (map['source']?.toString() ?? 'barcode_scan'),
       isFavorite: map['isFavorite'] == true,
       isSynced: map['isSynced'] != false,
       servingsPerContainer:
@@ -178,6 +180,56 @@ class FoodItem {
       reportNote: map['reportNote']?.toString(),
       category: map['category']?.toString(),
     );
+  }
+
+  // --- Source & Image Helper Properties ---
+
+  /// ตรวจสอบว่าเป็นข้อมูลที่มาจากการวิเคราะห์ภาพด้วย AI Vision หรือไม่
+  bool get isAi =>
+      source == 'ai_vision' ||
+      source == 'gemini_vision' ||
+      brand.contains('Gemini') ||
+      id.startsWith('ai_');
+
+  /// ตรวจสอบว่าเป็นข้อมูลที่มาจากการสแกนบาร์โค้ดหรือไม่
+  bool get isBarcode => !isAi && (source == 'barcode_scan' || barcode.isNotEmpty);
+
+  /// รูปภาพอาหารที่พร้อมแสดงผล หากไม่มี imageUrl จะดึงรูปจริงที่สอดคล้องกับชื่อเมนูให้อัตโนมัติ
+  String get effectiveImageUrl {
+    if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
+      return imageUrl!.trim();
+    }
+    final text = '$name $brand'.toLowerCase();
+    if (text.contains('ไก่') || text.contains('chicken') || text.contains('ปีกไก่')) {
+      return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300';
+    }
+    if (text.contains('มันฝรั่ง') ||
+        text.contains('ขนม') ||
+        text.contains('เลย์') ||
+        text.contains('chip') ||
+        text.contains('snack') ||
+        text.contains('สาหร่าย') ||
+        text.contains('โนริ')) {
+      return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300';
+    }
+    if (text.contains('น้ำ') ||
+        text.contains('นม') ||
+        text.contains('มะพร้าว') ||
+        text.contains('ชา') ||
+        text.contains('โค้ก') ||
+        text.contains('beverage')) {
+      return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300';
+    }
+    if (text.contains('กะเพรา') || text.contains('ข้าว') || text.contains('ผัด')) {
+      return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300';
+    }
+    if (text.contains('สลัด')) {
+      return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+    }
+    if (text.contains('โยเกิร์ต')) {
+      return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300';
+    }
+    return 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=300';
   }
 
   // --- Nutrition Calculation & Classification Helpers ---

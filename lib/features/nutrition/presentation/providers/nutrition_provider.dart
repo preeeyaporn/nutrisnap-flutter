@@ -59,6 +59,11 @@ class NutritionProvider extends ChangeNotifier {
         item.scannedAt.day == date.day);
 
     if (source != null && source != 'all') {
+      if (source == 'ai_vision' || source == 'gemini_vision') {
+        return dayItems.where((item) => item.isAi).length;
+      } else if (source == 'barcode_scan') {
+        return dayItems.where((item) => item.isBarcode).length;
+      }
       return dayItems.where((item) => item.source == source).length;
     }
     return dayItems.length;
@@ -72,7 +77,11 @@ class NutritionProvider extends ChangeNotifier {
         item.scannedAt.day == date.day);
 
     final targetItems = (source != null && source != 'all')
-        ? dayItems.where((item) => item.source == source)
+        ? ((source == 'ai_vision' || source == 'gemini_vision')
+            ? dayItems.where((item) => item.isAi)
+            : ((source == 'barcode_scan')
+                ? dayItems.where((item) => item.isBarcode)
+                : dayItems.where((item) => item.source == source)))
         : dayItems;
 
     return targetItems.fold<double>(0.0, (sum, item) => sum + item.calories);
@@ -86,7 +95,11 @@ class NutritionProvider extends ChangeNotifier {
         item.scannedAt.day == date.day);
 
     final targetItems = (source != null && source != 'all')
-        ? dayItems.where((item) => item.source == source)
+        ? ((source == 'ai_vision' || source == 'gemini_vision')
+            ? dayItems.where((item) => item.isAi)
+            : ((source == 'barcode_scan')
+                ? dayItems.where((item) => item.isBarcode)
+                : dayItems.where((item) => item.source == source)))
         : dayItems;
 
     double protein = 0.0;
@@ -125,6 +138,10 @@ class NutritionProvider extends ChangeNotifier {
     // 2. Category / Source Filter
     if (_selectedFilter == 'favorites') {
       items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter == 'ai_vision' || _selectedFilter == 'gemini_vision') {
+      items = items.where((item) => item.isAi).toList();
+    } else if (_selectedFilter == 'barcode_scan') {
+      items = items.where((item) => item.isBarcode).toList();
     } else if (_selectedFilter != 'all') {
       items = items.where((item) => item.source == _selectedFilter).toList();
     }
@@ -178,6 +195,10 @@ class NutritionProvider extends ChangeNotifier {
     // 2. Category / Source Filter
     if (_selectedFilter == 'favorites') {
       items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter == 'ai_vision' || _selectedFilter == 'gemini_vision') {
+      items = items.where((item) => item.isAi).toList();
+    } else if (_selectedFilter == 'barcode_scan') {
+      items = items.where((item) => item.isBarcode).toList();
     } else if (_selectedFilter != 'all') {
       items = items.where((item) => item.source == _selectedFilter).toList();
     }

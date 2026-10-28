@@ -665,7 +665,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildFoodCard(BuildContext context, NutritionProvider provider, FoodItem item) {
-    final isAi = item.source == 'ai_vision';
+    final isAi = item.isAi;
     final badgeLabel = isAi ? '• ✨ AI ประมาณการ' : '• ║█║ บาร์โค้ด';
     final mealTime = _getMealTime(item);
 
@@ -700,16 +700,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     width: 60,
                     height: 60,
                     color: const Color(0xFFF1F5F9),
-                    child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                        ? Image.network(
-                            item.imageUrl!,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
-                          )
-                        : const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
+                    child: Image.network(
+                      item.effectiveImageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
+                    ),
                   ),
                 ),
                 Positioned(

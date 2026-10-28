@@ -149,5 +149,31 @@ void main() {
       expect(find.text('นมสดเมจิ รสจืด'), findsNothing);
       expect(find.text('ข้าวกะเพราไก่'), findsOneWidget);
     });
+
+    testWidgets('AI items with gemini_vision source render AI badge and appear in AI filter', (tester) async {
+      final now = DateTime.now();
+      final chickenMeal = FoodItem(
+        id: 'ai_chicken_1',
+        name: 'ปีกไก่ทอด',
+        brand: 'Gemini 1.5 Flash Vision',
+        calories: 650,
+        protein: 30,
+        carbohydrates: 12,
+        fat: 42,
+        nutriScore: 'C',
+        scannedAt: now,
+        source: 'gemini_vision',
+      );
+
+      await localRepo.saveFoodItem(chickenMeal);
+      await provider.loadRecentScans();
+
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('ปีกไก่ทอด'), findsOneWidget);
+      expect(find.text('• ✨ AI ประมาณการ'), findsOneWidget);
+      expect(find.text('✨ กล้อง AI (1)'), findsOneWidget);
+    });
   });
 }
