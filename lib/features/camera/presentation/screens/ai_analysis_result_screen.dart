@@ -144,9 +144,9 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
     final confidencePercent = (_currentAnalysis.confidence * 100).toInt();
 
     final totalMacros = (protein * 4) + (carbs * 4) + (fat * 9);
-    final proteinRatio = totalMacros > 0 ? (protein * 4) / totalMacros : 0.25;
-    final carbsRatio = totalMacros > 0 ? (carbs * 4) / totalMacros : 0.48;
-    final fatRatio = totalMacros > 0 ? (fat * 9) / totalMacros : 0.27;
+    final proteinRatio = totalMacros > 0 ? (protein * 4) / totalMacros : 0.0;
+    final carbsRatio = totalMacros > 0 ? (carbs * 4) / totalMacros : 0.0;
+    final fatRatio = totalMacros > 0 ? (fat * 9) / totalMacros : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -924,28 +924,31 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
           const SizedBox(height: 18),
 
           // Colored multi-segment progress bar (Purple - Blue - Salmon)
+          // If not food (totalMacros == 0), show a clean neutral gray empty bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               height: 9,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: (proteinRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFF7C3AED)),
-                  ),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    flex: (carbsRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFF38BDF8)),
-                  ),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    flex: (fatRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFFFB7185)),
-                  ),
-                ],
-              ),
+              child: (proteinRatio > 0 || carbsRatio > 0 || fatRatio > 0)
+                  ? Row(
+                      children: [
+                        Expanded(
+                          flex: (proteinRatio * 100).toInt().clamp(1, 100),
+                          child: Container(color: const Color(0xFF7C3AED)),
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          flex: (carbsRatio * 100).toInt().clamp(1, 100),
+                          child: Container(color: const Color(0xFF38BDF8)),
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          flex: (fatRatio * 100).toInt().clamp(1, 100),
+                          child: Container(color: const Color(0xFFFB7185)),
+                        ),
+                      ],
+                    )
+                  : Container(color: const Color(0xFFE2E8F0)),
             ),
           ),
           const SizedBox(height: 18),
@@ -957,7 +960,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                 child: _buildMacroBox(
                   label: 'โปรตีน',
                   grams: '${protein.toInt()} ก.',
-                  percentage: '${(proteinRatio * 100).round()}%',
+                  percentage: proteinRatio > 0 ? '${(proteinRatio * 100).round()}%' : '0%',
                   indicatorColor: const Color(0xFF7C3AED),
                   altText: '${protein.toInt()}g',
                 ),
@@ -967,7 +970,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                 child: _buildMacroBox(
                   label: 'คาร์โบไฮเดรต',
                   grams: '${carbs.toInt()} ก.',
-                  percentage: '${(carbsRatio * 100).round()}%',
+                  percentage: carbsRatio > 0 ? '${(carbsRatio * 100).round()}%' : '0%',
                   indicatorColor: const Color(0xFF38BDF8),
                   altText: '${carbs.toInt()}g',
                 ),
@@ -977,7 +980,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                 child: _buildMacroBox(
                   label: 'ไขมัน',
                   grams: '${fat.toInt()} ก.',
-                  percentage: '${(fatRatio * 100).round()}%',
+                  percentage: fatRatio > 0 ? '${(fatRatio * 100).round()}%' : '0%',
                   indicatorColor: const Color(0xFFFB7185),
                   altText: '${fat.toInt()}g',
                 ),

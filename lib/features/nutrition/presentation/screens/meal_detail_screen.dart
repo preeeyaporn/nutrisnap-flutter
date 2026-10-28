@@ -203,13 +203,13 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     final totalMacros = (protein * 4) + (carbs * 4) + (fat * 9);
     final proteinPercent = totalMacros > 0
         ? ((protein * 4) / totalMacros * 100).round()
-        : 23;
+        : 0;
     final carbsPercent = totalMacros > 0
         ? ((carbs * 4) / totalMacros * 100).round()
-        : 39;
+        : 0;
     final fatPercent = totalMacros > 0
         ? ((fat * 9) / totalMacros * 100).round()
-        : 38;
+        : 0;
     final quotaPercent = ((calories / 2000.0) * 100).round();
 
     final confidence = widget.analysisResult?.confidence ?? 0.94;
