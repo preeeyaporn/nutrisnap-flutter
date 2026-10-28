@@ -12,6 +12,7 @@ import 'core/services/open_food_facts_service.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/nutrition/data/repositories/nutrisnap_repository_impl.dart';
 import 'features/nutrition/presentation/providers/nutrition_provider.dart';
+import 'firebase_options.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 void main() async {
@@ -19,7 +20,9 @@ void main() async {
 
   // Initialize Firebase Cloud Services
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     debugPrint('Firebase initialization notice: $e');
   }
