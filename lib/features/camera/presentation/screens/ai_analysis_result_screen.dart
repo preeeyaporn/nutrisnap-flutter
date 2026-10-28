@@ -177,21 +177,52 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
           children: [
             // Top Status Badges Row: "✦ ความแม่นยำ 94% • Gemini Vision API" + "● ตรวจสอบแล้ว"
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
-                    borderRadius: BorderRadius.circular(20),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3E8FF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED), size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'ความแม่นยำ \$confidencePercent% • Gemini Vision API',
+                            style: AppTypography.chipText.copyWith(
+                              color: const Color(0xFF7C3AED),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED), size: 14),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF7C3AED),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        'ความแม่นยำ $confidencePercent% • Gemini Vision API',
+                        'ตรวจสอบแล้ว',
                         style: AppTypography.chipText.copyWith(
                           color: const Color(0xFF7C3AED),
                           fontSize: 12,
@@ -200,28 +231,6 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
                       ),
                     ],
                   ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF7C3AED),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'ตรวจสอบแล้ว',
-                      style: AppTypography.chipText.copyWith(
-                        color: const Color(0xFF7C3AED),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
