@@ -234,35 +234,6 @@ class _ProfileTab extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: user?.isAnonymous == true
-                          ? const Color(0xFFF1F5F9)
-                          : (user?.displayName.contains('Google') == true
-                              ? const Color(0xFFEFF6FF)
-                              : AppColors.primaryLavender),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      user?.isAnonymous == true
-                          ? 'GUEST'
-                          : (user?.displayName.contains('Google') == true
-                              ? 'GOOGLE'
-                              : 'PRO'),
-                      style: AppTypography.chipText.copyWith(
-                        color: user?.isAnonymous == true
-                            ? const Color(0xFF64748B)
-                            : (user?.displayName.contains('Google') == true
-                                ? const Color(0xFF2563EB)
-                                : AppColors.primary),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
