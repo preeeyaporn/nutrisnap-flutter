@@ -101,7 +101,16 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     final cachedResult = await _localRepository.getFoodItemByBarcode(barcode);
     final cachedItem = cachedResult.dataOrNull;
     if (cachedItem != null) {
-      if (!forceRefresh || cachedItem.isUserEdited) {
+      // ตรวจสอบว่า cachedItem เป็นข้อมูล fallback ชั่วคราวหรือไม่
+      // หากเป็น fallback (เช่น อาหารไม่ระบุชื่อ หรือค่า default 140 kcal ที่ไม่มีแบรนด์)
+      // ให้ปล่อยให้ไป query Open Food Facts ต่อ เพื่อดึงข้อมูลจริงจากเครือข่าย
+      final isGenericFallback = cachedItem.name.contains('อาหารไม่ระบุชื่อ') ||
+          (cachedItem.calories == 140.0 &&
+              cachedItem.protein == 2.0 &&
+              cachedItem.fat == 7.0 &&
+              cachedItem.brand.isEmpty);
+
+      if (cachedItem.isUserEdited || (!forceRefresh && !isGenericFallback)) {
         return Result.success(cachedItem);
       }
     }
