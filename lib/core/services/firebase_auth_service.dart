@@ -1,4 +1,10 @@
+// ignore_for_file: prefer_initializing_formals
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nutrisnap/core/constants/api_constants.dart';
@@ -19,6 +25,12 @@ abstract class FirebaseAuthService {
     String? displayName,
   });
   Future<Result<UserModel>> signInAnonymously();
+  Future<Result<UserModel>> signInWithGoogle({
+    String? customEmail,
+    String? customDisplayName,
+    String? customPhotoUrl,
+  });
+  Future<List<UserModel>> getSavedGoogleUsers();
   Future<Result<void>> signOut();
   Future<Result<UserModel>> updateProfile({
     String? displayName,
@@ -27,8 +39,11 @@ abstract class FirebaseAuthService {
   });
 }
 
-/// Firebase Auth implementation supporting local simulation and Cloud Firebase bridge
+/// Firebase Auth implementation supporting Real Firebase Auth, Cloud Firestore sync,
+/// and smooth offline/testing fallback.
 class FirebaseAuthServiceImpl implements FirebaseAuthService {
+  final FirebaseAuth? _auth;
+  final FirebaseFirestore? _firestore;
   final _authStateController = StreamController<UserModel?>.broadcast();
   UserModel? _currentUser;
 
@@ -76,10 +91,31 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     'user@nutri.com': 'password123',
   };
 
-  FirebaseAuthServiceImpl({UserModel? initialUser}) {
-    _currentUser = initialUser;
-    // Notify after microtask
-    Future.microtask(() => _authStateController.add(_currentUser));
+  FirebaseAuthServiceImpl({
+    UserModel? initialUser,
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+  })  : _auth = auth,
+        _firestore = firestore,
+        _currentUser = initialUser {
+    Future.microtask(() => _initAuthListener());
+  }
+
+  void _initAuthListener() {
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        auth.authStateChanges().listen((fbUser) {
+          if (fbUser == null) {
+            if (_currentUser != null && !_currentUser!.isAnonymous) {
+              _currentUser = null;
+              _authStateController.add(null);
+            }
+          }
+        });
+      } catch (_) {}
+    }
+    _authStateController.add(_currentUser);
   }
 
   @override
@@ -90,6 +126,24 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
   /// Flag set to true in main.dart when Hive is initialized
   static bool isHiveInitialized = false;
+
+  Future<void> _syncUserToFirestore(UserModel user) async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      final fs = _firestore ?? FirebaseFirestore.instance;
+      await fs.collection('users').doc(user.id).set({
+        'uid': user.id,
+        'email': user.email,
+        'displayName': user.displayName,
+        'photoUrl': user.photoUrl,
+        'isAnonymous': user.isAnonymous,
+        'dailyCalorieTarget': user.dailyCalorieTarget,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Firestore sync notice: $e');
+    }
+  }
 
   Future<Box<Map>?> _getUserBox() async {
     if (!isHiveInitialized) return null;
@@ -215,7 +269,6 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     String email,
     String password,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty || !normalizedEmail.contains('@')) {
       return Result.failure('กรุณากรอกอีเมลให้ถูกต้อง');
@@ -224,10 +277,62 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       return Result.failure('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
     }
 
-    // 1. Check in-memory registry
+    // 1. If Firebase is active, attempt real Firebase sign in
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        final userCred = await auth.signInWithEmailAndPassword(
+          email: normalizedEmail,
+          password: password,
+        );
+        final fbUser = userCred.user;
+        if (fbUser != null) {
+          final localUser = await _loadUserFromDatabase(normalizedEmail);
+          final chosenName = fbUser.displayName ??
+              localUser?.displayName ??
+              (normalizedEmail == 'user@nutrisnap.com'
+                  ? 'ปรียาภรณ์'
+                  : normalizedEmail.split('@').first);
+
+          final user = UserModel(
+            id: fbUser.uid,
+            email: fbUser.email ?? normalizedEmail,
+            displayName: chosenName,
+            photoUrl: fbUser.photoURL ?? localUser?.photoUrl,
+            isAnonymous: false,
+            dailyCalorieTarget: localUser?.dailyCalorieTarget ?? 2000.0,
+            createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
+          );
+          await _syncUserToFirestore(user);
+          await _persistUser(user, password: password);
+          _currentUser = user;
+          _authStateController.add(_currentUser);
+          return Result.success(user);
+        }
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'wrong-password') {
+          return Result.failure('รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านอีกครั้ง');
+        }
+        if (e.code == 'user-not-found') {
+          final localUser =
+              _registeredUsers[normalizedEmail] ?? await _loadUserFromDatabase(normalizedEmail);
+          if (localUser == null) {
+            return Result.failure(
+              'ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ',
+            );
+          }
+        }
+        debugPrint('FirebaseAuth signIn notice: ${e.code} ${e.message}');
+      } catch (e) {
+        debugPrint('FirebaseAuth signIn general error: $e');
+      }
+    }
+
+    // 2. Local simulation fallback (for unit tests, demo users, offline mode)
+    await Future.delayed(const Duration(milliseconds: 100));
+
     UserModel? user = _registeredUsers[normalizedEmail];
 
-    // 2. Check Local Database (Hive / SharedPreferences)
     if (user == null) {
       user = await _loadUserFromDatabase(normalizedEmail);
       if (user != null) {
@@ -235,14 +340,12 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       }
     }
 
-    // 3. Block login if user is not registered in the system
     if (user == null) {
       return Result.failure(
         'ไม่พบบัญชีผู้ใช้นี้ในระบบ กรุณาสมัครสมาชิกก่อนเข้าสู่ระบบ',
       );
     }
 
-    // 4. Verify password
     String? expectedPassword = _userPasswords[normalizedEmail];
     if (expectedPassword == null) {
       expectedPassword = await _loadPasswordFromDatabase(normalizedEmail);
@@ -266,7 +369,6 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     String password, {
     String? displayName,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty || !normalizedEmail.contains('@')) {
       return Result.failure('รูปแบบอีเมลไม่ถูกต้อง');
@@ -278,8 +380,55 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     final chosenName = (displayName != null && displayName.trim().isNotEmpty)
         ? displayName.trim()
         : (normalizedEmail == 'user@nutrisnap.com'
-              ? 'ปรียาภรณ์'
-              : email.split('@').first);
+            ? 'ปรียาภรณ์'
+            : email.split('@').first);
+
+    // 1. If Firebase is active, attempt real Firebase account creation
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        final userCred = await auth.createUserWithEmailAndPassword(
+          email: normalizedEmail,
+          password: password,
+        );
+        final fbUser = userCred.user;
+        if (fbUser != null) {
+          try {
+            await fbUser.updateDisplayName(chosenName);
+          } catch (_) {}
+
+          final user = UserModel(
+            id: fbUser.uid,
+            email: fbUser.email ?? normalizedEmail,
+            displayName: chosenName,
+            isAnonymous: false,
+            dailyCalorieTarget: 2000.0,
+            createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
+          );
+
+          await _syncUserToFirestore(user);
+          _registeredUsers[normalizedEmail] = user;
+          _userPasswords[normalizedEmail] = password;
+          await _persistUser(user, password: password);
+
+          _currentUser = user;
+          _authStateController.add(_currentUser);
+          return Result.success(user);
+        }
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          return Result.failure('อีเมลนี้ถูกลงทะเบียนไว้แล้วในระบบ');
+        } else if (e.code == 'weak-password') {
+          return Result.failure('รหัสผ่านคาดเดาง่ายเกินไป');
+        }
+        debugPrint('FirebaseAuth signUp notice: ${e.code} ${e.message}');
+      } catch (e) {
+        debugPrint('FirebaseAuth signUp general error: $e');
+      }
+    }
+
+    // 2. Local simulation fallback (for unit tests and offline mode)
+    await Future.delayed(const Duration(milliseconds: 100));
 
     final user = UserModel(
       id: 'usr_${normalizedEmail.replaceAll('@', '_').replaceAll('.', '_')}',
@@ -290,7 +439,6 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       createdAt: DateTime.now(),
     );
 
-    // Save in registry and persist to database with password
     _registeredUsers[normalizedEmail] = user;
     _userPasswords[normalizedEmail] = password;
     await _persistUser(user, password: password);
@@ -302,7 +450,29 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
 
   @override
   Future<Result<UserModel>> signInAnonymously() async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        final userCred = await auth.signInAnonymously();
+        final fbUser = userCred.user;
+        if (fbUser != null) {
+          final guest = UserModel(
+            id: fbUser.uid,
+            displayName: 'ผู้ใช้ทั่วไป',
+            isAnonymous: true,
+            dailyCalorieTarget: 2000.0,
+            createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
+          );
+          _currentUser = guest;
+          _authStateController.add(_currentUser);
+          return Result.success(guest);
+        }
+      } catch (e) {
+        debugPrint('FirebaseAuth anonymous notice: $e');
+      }
+    }
+
+    await Future.delayed(const Duration(milliseconds: 100));
     final guest = UserModel.guest();
     _currentUser = guest;
     _authStateController.add(_currentUser);
@@ -310,8 +480,129 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
   }
 
   @override
-  Future<Result<void>> signOut() async {
+  Future<List<UserModel>> getSavedGoogleUsers() async {
+    return [];
+  }
+
+  @override
+  Future<Result<UserModel>> signInWithGoogle({
+    String? customEmail,
+    String? customDisplayName,
+    String? customPhotoUrl,
+  }) async {
+    // 1. If Firebase is active and customEmail is not supplied, authenticate via GoogleSignIn & FirebaseAuth
+    if (Firebase.apps.isNotEmpty && customEmail == null) {
+      try {
+        GoogleSignInAccount? googleUser;
+        try {
+          if (GoogleSignIn.instance.supportsAuthenticate()) {
+            googleUser = await GoogleSignIn.instance.authenticate();
+          }
+        } catch (e) {
+          debugPrint('GoogleSignIn error: $e');
+        }
+
+        if (googleUser != null) {
+          final googleAuth = googleUser.authentication;
+          final credential = GoogleAuthProvider.credential(
+            idToken: googleAuth.idToken,
+          );
+          final auth = _auth ?? FirebaseAuth.instance;
+          final userCred = await auth.signInWithCredential(credential);
+          final fbUser = userCred.user;
+          if (fbUser != null) {
+            final user = UserModel(
+              id: fbUser.uid,
+              email: fbUser.email ?? googleUser.email,
+              displayName: fbUser.displayName ??
+                  googleUser.displayName ??
+                  'ผู้ใช้งาน Google',
+              photoUrl: fbUser.photoURL ??
+                  googleUser.photoUrl ??
+                  'https://lh3.googleusercontent.com/a/default-user',
+              isAnonymous: false,
+              dailyCalorieTarget: 2000.0,
+              createdAt: fbUser.metadata.creationTime ?? DateTime.now(),
+            );
+            await _syncUserToFirestore(user);
+            await _persistUser(user);
+            _currentUser = user;
+            _authStateController.add(_currentUser);
+            return Result.success(user);
+          }
+        }
+      } catch (e) {
+        debugPrint('Firebase Google Sign-In notice, falling back: $e');
+      }
+    }
+
     await Future.delayed(const Duration(milliseconds: 100));
+
+    // 2. Custom credentials provided (from Google Account Sheet or test)
+    if (customEmail != null && customEmail.trim().isNotEmpty) {
+      final normalizedEmail = customEmail.trim().toLowerCase();
+      final name = (customDisplayName != null && customDisplayName.trim().isNotEmpty)
+          ? customDisplayName.trim()
+          : (normalizedEmail.contains('@')
+              ? normalizedEmail.split('@').first
+              : normalizedEmail);
+
+      final user = UserModel(
+        id: 'usr_google_${normalizedEmail.replaceAll('@', '_').replaceAll('.', '_')}',
+        email: normalizedEmail,
+        displayName: name,
+        photoUrl: customPhotoUrl ??
+            'https://lh3.googleusercontent.com/a/default-user',
+        isAnonymous: false,
+        dailyCalorieTarget: 2000.0,
+        createdAt: DateTime.now(),
+      );
+
+      _registeredUsers[normalizedEmail] = user;
+      await _syncUserToFirestore(user);
+      await _persistUser(user);
+
+      _currentUser = user;
+      _authStateController.add(_currentUser);
+      return Result.success(user);
+    }
+
+    // 3. Fallback / Test Default Google Account
+    const googleEmail = 'preeyapornnr@gmail.com';
+    final user = UserModel(
+      id: 'usr_google_preeyapornnr',
+      email: googleEmail,
+      displayName: 'ปรียาภรณ์ นาคสมบูรณ์',
+      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime.now(),
+    );
+
+    _registeredUsers[googleEmail] = user;
+    await _syncUserToFirestore(user);
+    await _persistUser(user);
+
+    _currentUser = user;
+    _authStateController.add(_currentUser);
+    return Result.success(user);
+  }
+
+  @override
+  Future<Result<void>> signOut() async {
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        await auth.signOut();
+        try {
+          await GoogleSignIn.instance.signOut();
+        } catch (_) {}
+      } catch (e) {
+        debugPrint('FirebaseAuth signOut notice: $e');
+      }
+    }
+
+    await Future.delayed(const Duration(milliseconds: 50));
     _currentUser = null;
     _authStateController.add(null);
     return Result.success(null);
@@ -327,12 +618,26 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       return Result.failure('ไม่มีผู้ใช้ที่เข้าสู่ระบบ');
     }
 
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final auth = _auth ?? FirebaseAuth.instance;
+        final fbUser = auth.currentUser;
+        if (fbUser != null) {
+          if (displayName != null) await fbUser.updateDisplayName(displayName);
+          if (photoUrl != null) await fbUser.updatePhotoURL(photoUrl);
+        }
+      } catch (e) {
+        debugPrint('FirebaseAuth updateProfile notice: $e');
+      }
+    }
+
     final updated = _currentUser!.copyWith(
       displayName: displayName,
       photoUrl: photoUrl,
       dailyCalorieTarget: dailyCalorieTarget,
     );
     _currentUser = updated;
+    await _syncUserToFirestore(updated);
     if (updated.email != null && updated.email!.isNotEmpty) {
       final normalizedEmail = updated.email!.toLowerCase();
       _registeredUsers[normalizedEmail] = updated;

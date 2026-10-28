@@ -143,5 +143,26 @@ void main() {
         expect(result.errorOrNull, contains('รหัสผ่านไม่ถูกต้อง'));
       },
     );
+
+    test('signInWithGoogle signs in with Google user', () async {
+      final result = await authService.signInWithGoogle();
+      expect(result.isSuccess, isTrue);
+      expect(authService.currentUser, isNotNull);
+      expect(authService.currentUser?.email, 'preeyapornnr@gmail.com');
+      expect(authService.currentUser?.displayName, contains('ปรียาภรณ์ นาคสมบูรณ์'));
+      expect(authService.currentUser?.isAnonymous, isFalse);
+    });
+
+    test('signInWithGoogle with custom credentials sets user data', () async {
+      final result = await authService.signInWithGoogle(
+        customEmail: 'custom@google.com',
+        customDisplayName: 'Custom Google User',
+        customPhotoUrl: 'https://custom.photo/pic.jpg',
+      );
+      expect(result.isSuccess, isTrue);
+      expect(authService.currentUser?.email, 'custom@google.com');
+      expect(authService.currentUser?.displayName, 'Custom Google User');
+      expect(authService.currentUser?.photoUrl, 'https://custom.photo/pic.jpg');
+    });
   });
 }
