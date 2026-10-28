@@ -60,9 +60,18 @@ void main() {
       await tester.tap(googleBtn);
       await tester.pumpAndSettle();
 
-      final accountItem = find.text('ปรียาภรณ์ นาคสมบูรณ์');
-      expect(accountItem, findsOneWidget);
-      await tester.tap(accountItem);
+      // Ensure no pre-saved personal card is exposed
+      expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsNothing);
+
+      // Enter Google credentials dynamically
+      final emailField = find.widgetWithText(TextField, 'อีเมล Google ของคุณ (เช่น name@gmail.com)');
+      final nameField = find.widgetWithText(TextField, 'ชื่อบัญชี Google หรือชื่อของคุณ');
+      await tester.enterText(emailField, 'preeyapornnr@gmail.com');
+      await tester.enterText(nameField, 'ปรียาภรณ์ นาคสมบูรณ์');
+      await tester.pumpAndSettle();
+
+      final submitBtn = find.text('ดำเนินการต่อด้วย Google');
+      await tester.tap(submitBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pump(const Duration(milliseconds: 600));
@@ -213,9 +222,18 @@ void main() {
         await tester.tap(googleBtn);
         await tester.pumpAndSettle();
 
-        final accountItem = find.text('ปรียาภรณ์ นาคสมบูรณ์');
-        expect(accountItem, findsOneWidget);
-        await tester.tap(accountItem);
+        // Ensure no pre-saved personal card is exposed
+        expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsNothing);
+
+        // Enter Google credentials dynamically
+        final emailField = find.widgetWithText(TextField, 'อีเมล Google ของคุณ (เช่น name@gmail.com)');
+        final nameField = find.widgetWithText(TextField, 'ชื่อบัญชี Google หรือชื่อของคุณ');
+        await tester.enterText(emailField, 'preeyapornnr@gmail.com');
+        await tester.enterText(nameField, 'ปรียาภรณ์ นาคสมบูรณ์');
+        await tester.pumpAndSettle();
+
+        final submitBtn = find.text('ดำเนินการต่อด้วย Google');
+        await tester.tap(submitBtn);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 600));

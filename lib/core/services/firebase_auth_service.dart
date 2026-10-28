@@ -315,27 +315,9 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     return Result.success(guest);
   }
 
-  static final List<UserModel> _savedGoogleAccounts = [
-    UserModel(
-      id: 'usr_google_preeyapornnr',
-      email: 'preeyapornnr@gmail.com',
-      displayName: 'ปรียาภรณ์ นาคสมบูรณ์',
-      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
-      isAnonymous: false,
-      dailyCalorieTarget: 2000.0,
-      createdAt: DateTime(2026, 1, 1),
-    ),
-  ];
-
   @override
   Future<List<UserModel>> getSavedGoogleUsers() async {
-    final list = <UserModel>[..._savedGoogleAccounts];
-    for (final u in _registeredUsers.values) {
-      if (u.id.startsWith('usr_google_') && !list.any((x) => x.email == u.email)) {
-        list.add(u);
-      }
-    }
-    return list;
+    return [];
   }
 
   @override
@@ -364,9 +346,6 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
       );
 
       _registeredUsers[normalizedEmail] = user;
-      if (!_savedGoogleAccounts.any((x) => x.email == normalizedEmail)) {
-        _savedGoogleAccounts.add(user);
-      }
       await _persistUser(user);
 
       _currentUser = user;

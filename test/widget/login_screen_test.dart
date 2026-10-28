@@ -120,14 +120,20 @@ void main() {
         await tester.tap(googleBtn);
         await tester.pumpAndSettle();
 
-        // Account picker sheet should be open
+        // Account picker sheet should be open with NO hardcoded saved accounts
         expect(find.text('ลงชื่อเข้าใช้ด้วย Google'), findsOneWidget);
-        expect(find.textContaining('เลือกบัญชี Google'), findsOneWidget);
+        expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsNothing);
 
-        // Tap on first account in the list
-        final accountItem = find.text('ปรียาภรณ์ นาคสมบูรณ์');
-        expect(accountItem, findsOneWidget);
-        await tester.tap(accountItem);
+        // Enter Google account credentials dynamically
+        final emailField = find.widgetWithText(TextField, 'อีเมล Google ของคุณ (เช่น name@gmail.com)');
+        final nameField = find.widgetWithText(TextField, 'ชื่อบัญชี Google หรือชื่อของคุณ');
+        await tester.enterText(emailField, 'testuser@gmail.com');
+        await tester.enterText(nameField, 'Test User');
+        await tester.pumpAndSettle();
+
+        // Tap submit button
+        final submitBtn = find.text('ดำเนินการต่อด้วย Google');
+        await tester.tap(submitBtn);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 600));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
@@ -76,11 +77,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleDirectGoogleLogin({
     String? email,
     String? displayName,
+    String? photoUrl,
   }) async {
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signInWithGoogle(
       email: email,
       displayName: displayName,
+      photoUrl: photoUrl,
     );
 
     if (!mounted) return;
@@ -129,14 +132,33 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showGoogleAccountPicker() async {
-    final authProvider = context.read<AuthProvider>();
-    final savedUsers = await authProvider.getSavedGoogleUsers();
+  Future<void> _handleGoogleSignInFlow() async {
+    // 1. Attempt native Google Authentication if supported on platform (Android / iOS / Web)
+    try {
+      if (GoogleSignIn.instance.supportsAuthenticate()) {
+        final account = await GoogleSignIn.instance.authenticate();
+        await _handleDirectGoogleLogin(
+          email: account.email,
+          displayName: account.displayName,
+          photoUrl: account.photoUrl,
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint('Native Google Sign-In not supported or failed on platform: $e');
+    }
 
     if (!mounted) return;
 
-    final newEmailController = TextEditingController();
-    final newNameController = TextEditingController();
+    // 2. Cross-platform / Desktop / Test fallback:
+    // Prompt the user to connect their OWN Google Account dynamically.
+    // ABSOLUTELY ZERO PRE-SAVED ACCOUNTS are shown so no other user can access personal data.
+    _showGoogleAccountSignInSheet();
+  }
+
+  void _showGoogleAccountSignInSheet() {
+    final emailController = TextEditingController();
+    final nameController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -179,13 +201,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildGoogleLogo(size: 22),
-                        const SizedBox(width: 8),
+                        _buildGoogleLogo(size: 24),
+                        const SizedBox(width: 10),
                         const Flexible(
                           child: Text(
                             'ลงชื่อเข้าใช้ด้วย Google',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E293B),
                             ),
@@ -196,171 +218,131 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'เลือกบัญชี Google เพื่อดำเนินการต่อยัง NutriSnap',
+                      'เชื่อมต่อบัญชี Google ของคุณเพื่อเข้าใช้งาน NutriSnap',
                       style: AppTypography.bodySmall.copyWith(
                         color: const Color(0xFF64748B),
                         fontSize: 13,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // List Saved Accounts
-                    ...savedUsers.map((user) {
-                      final initial = (user.displayName.isNotEmpty)
-                          ? user.displayName[0].toUpperCase()
-                          : 'G';
-                      return InkWell(
-                        onTap: () {
-                          Navigator.of(ctx).pop();
-                          _handleDirectGoogleLogin(
-                            email: user.email,
-                            displayName: user.displayName,
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                            borderRadius: BorderRadius.circular(16),
-                            color: const Color(0xFFF8FAFC),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: const Color(0xFF2563EB),
-                                child: Text(
-                                  initial,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      user.displayName,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1E293B),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      user.email ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-
-                    const Divider(height: 24, color: Color(0xFFE2E8F0)),
-
-                    // "Use Another Account" custom input
+                    // Privacy & Security Callout
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                      child: Row(
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF2563EB), size: 20),
-                              SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  'ใช้บัญชี Google อื่นของคุณ',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: newEmailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: 'อีเมล Google (เช่น yourname@gmail.com)',
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          const Icon(Icons.shield_outlined, color: Color(0xFF2563EB), size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'เพื่อความปลอดภัย ระบบจะไม่จำประวัติบัญชีค้างไว้ในเครื่อง ผู้ใช้งานแต่ละท่านสามารถเชื่อมต่อด้วยบัญชี Google ของตนเองได้โดยตรง',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: const Color(0xFF1E40AF),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: newNameController,
-                            decoration: InputDecoration(
-                              hintText: 'ชื่อ-นามสกุล ของคุณ',
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2563EB),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () {
-                              final email = newEmailController.text.trim();
-                              final name = newNameController.text.trim();
-                              if (email.isEmpty || !email.contains('@')) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('กรุณากรอกอีเมล Google ให้ถูกต้อง')),
-                                );
-                                return;
-                              }
-                              Navigator.of(ctx).pop();
-                              _handleDirectGoogleLogin(
-                                email: email,
-                                displayName: name.isNotEmpty ? name : email.split('@').first,
-                              );
-                            },
-                            child: const Text('เข้าสู่ระบบด้วยบัญชีนี้'),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Email Input
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'อีเมล Google ของคุณ',
+                        hintText: 'อีเมล Google ของคุณ (เช่น name@gmail.com)',
+                        prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Display Name Input
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'ชื่อ-นามสกุล ของคุณ',
+                        hintText: 'ชื่อบัญชี Google หรือชื่อของคุณ',
+                        prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF94A3B8)),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Submit Button
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () {
+                          final email = emailController.text.trim();
+                          final name = nameController.text.trim();
+                          if (email.isEmpty || !email.contains('@')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('กรุณากรอกอีเมล Google ให้ถูกต้อง')),
+                            );
+                            return;
+                          }
+                          Navigator.of(ctx).pop();
+                          _handleDirectGoogleLogin(
+                            email: email,
+                            displayName: name.isNotEmpty ? name : email.split('@').first,
+                          );
+                        },
+                        child: const Text(
+                          'ดำเนินการต่อด้วย Google',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Cancel Button
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text(
+                        'ยกเลิก',
+                        style: TextStyle(color: Color(0xFF64748B)),
                       ),
                     ),
                   ],
@@ -467,7 +449,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _showGoogleAccountPicker,
+                    onPressed: isLoading ? null : _handleGoogleSignInFlow,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: const Color(0xFF1E293B),
