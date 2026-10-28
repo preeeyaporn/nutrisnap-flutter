@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
-import 'package:nutrisnap/core/services/gemini_service.dart';
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
+import 'package:nutrisnap/features/history/presentation/screens/history_screen.dart';
 import 'package:nutrisnap/features/home/presentation/screens/home_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/meal_detail_screen.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
+import 'package:nutrisnap/features/sync/presentation/screens/sync_offline_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
@@ -17,7 +17,7 @@ class MainShellScreen extends StatefulWidget {
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class _MainShellScreenState extends State<MainShellScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
@@ -25,21 +25,51 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pages = [
       HomeScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
-      const _HistoryTab(),
-      const _SyncTab(),
+      const HistoryScreen(),
+      SyncOfflineScreen(
+        onGoToHistory: () => setState(() => _currentIndex = 1),
+      ),
       const _ProfileTab(),
     ];
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<NutritionProvider>().checkRealConnectivity();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authUser = context.watch<AuthProvider>().currentUser;
+    if (authUser != null) {
+      final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+          ? authUser.email!.trim()
+          : authUser.id;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<NutritionProvider>().updateUserInfo(
+            newUserId: effectiveId,
+            email: authUser.email,
+            displayName: authUser.displayName,
+            dailyTarget: authUser.dailyCalorieTarget,
+          );
+        }
+      });
+    }
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -53,7 +83,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -69,7 +99,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
                 _buildNavItem(
                   index: 2,
-                  icon: Icons.cloud_sync_rounded,
+                  icon: Icons.sync_rounded,
                   label: 'ซิงค์ข้อมูล',
                 ),
                 _buildNavItem(
@@ -107,7 +137,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
             children: [
               Icon(
                 icon,
-                color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                color: isSelected
+                    ? const Color(0xFF7C3AED)
+                    : const Color(0xFF94A3B8),
                 size: 22,
               ),
               const SizedBox(height: 3),
@@ -116,7 +148,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 child: Text(
                   label,
                   style: AppTypography.chipText.copyWith(
-                    color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF94A3B8),
+                    color: isSelected
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFF94A3B8),
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -129,232 +163,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 }
-
-class _HistoryTab extends StatelessWidget {
-  const _HistoryTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('ประวัติการสแกนและโภชนาการ', style: AppTypography.heading3),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_sync_rounded, color: AppColors.primary),
-            onPressed: () async {
-              final ok = await context.read<NutritionProvider>().syncCloud();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: Consumer<NutritionProvider>(
-        builder: (context, provider, child) {
-          final items = provider.recentScans;
-          if (items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.fastfood_outlined, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 12),
-                  Text('ยังไม่มีประวัติการสแกนอาหาร', style: AppTypography.bodyMedium),
-                  const SizedBox(height: 6),
-                  Text('สแกนบาร์โค้ดหรือถ่ายภาพอาหารเพื่อเริ่มต้น', style: AppTypography.bodySmall),
-                ],
-              ),
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Card(
-                color: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFFF1F5F9)),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  leading: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      item.source == 'barcode_scan'
-                          ? Icons.qr_code_2_rounded
-                          : Icons.auto_awesome,
-                      color: const Color(0xFF7C3AED),
-                    ),
-                  ),
-                  title: Text(
-                    item.name,
-                    style: AppTypography.heading3.copyWith(fontSize: 15),
-                  ),
-                  subtitle: Text(
-                    '${item.calories.toInt()} kcal • โปรตีน ${item.protein.toInt()}g • เกรด ${item.nutriScore ?? "A"}',
-                    style: AppTypography.bodySmall,
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                  onTap: () {
-                    if (item.source == 'gemini_vision') {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => MealDetailScreen(item: item),
-                        ),
-                      );
-                    } else {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => NutritionDetailScreen(item: item),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _SyncTab extends StatelessWidget {
-  const _SyncTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final nutritionProvider = context.watch<NutritionProvider>();
-    final itemsCount = nutritionProvider.recentScans.length;
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('ซิงค์ข้อมูลคลาวด์', style: AppTypography.heading3),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.05),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryLavender,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.cloud_sync_rounded,
-                      color: AppColors.primary,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Cloud Firestore Synchronization',
-                    style: AppTypography.heading2.copyWith(fontSize: 17),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'สำรองข้อมูลการสแกนและโภชนาการของคุณขึ้นคลาวด์อย่างปลอดภัย เข้าถึงได้จากทุกอุปกรณ์',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: const Color(0xFF64748B),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('ข้อมูลท้องถิ่นใน Hive', style: AppTypography.bodyMedium),
-                        Text('$itemsCount รายการ', style: AppTypography.heading3.copyWith(color: AppColors.primary)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final ok = await context.read<NutritionProvider>().syncCloud();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(ok ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ' : 'ซิงค์ข้อมูลไม่สำเร็จ'),
-                              backgroundColor: ok ? AppColors.success : AppColors.error,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.sync_rounded, color: Colors.white),
-                      label: Text(
-                        'ซิงค์ข้อมูลเดี๋ยวนี้',
-                        style: AppTypography.buttonText,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab();
 
@@ -364,8 +172,12 @@ class _ProfileTab extends StatelessWidget {
     final user = authProvider.currentUser;
     final displayName = user?.displayName.isNotEmpty == true
         ? user!.displayName
-        : (user?.isAnonymous == true ? 'ผู้ใช้งานทั่วไป (Guest)' : 'ผู้ใช้งาน NutriSnap');
-    final emailText = user?.email ?? (user?.isAnonymous == true ? 'โหมดทดลองใช้งาน' : 'ยังไม่ได้ระบุอีเมล');
+        : (user?.isAnonymous == true
+              ? 'ผู้ใช้งานทั่วไป (Guest)'
+              : 'ผู้ใช้งาน NutriSnap');
+    final emailText =
+        user?.email ??
+        (user?.isAnonymous == true ? 'โหมดทดลองใช้งาน' : 'ยังไม่ได้ระบุอีเมล');
     final targetKcal = user?.dailyCalorieTarget.toStringAsFixed(0) ?? '2,000';
 
     return Scaffold(
@@ -395,7 +207,11 @@ class _ProfileTab extends StatelessWidget {
                       gradient: AppColors.primaryGradient,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.person, color: Colors.white, size: 30),
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -404,23 +220,18 @@ class _ProfileTab extends StatelessWidget {
                       children: [
                         Text(displayName, style: AppTypography.heading3),
                         const SizedBox(height: 2),
-                        Text(emailText, style: AppTypography.bodySmall.copyWith(color: AppColors.neutralSecondary)),
+                        Text(
+                          emailText,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.neutralSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text('เป้าหมาย $targetKcal kcal / วัน', style: AppTypography.bodySmall),
+                        Text(
+                          'เป้าหมาย $targetKcal kcal / วัน',
+                          style: AppTypography.bodySmall,
+                        ),
                       ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: user?.isAnonymous == true ? const Color(0xFFF1F5F9) : AppColors.primaryLavender,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      user?.isAnonymous == true ? 'GUEST' : 'PRO',
-                      style: AppTypography.chipText.copyWith(
-                        color: user?.isAnonymous == true ? const Color(0xFF64748B) : AppColors.primary,
-                      ),
                     ),
                   ),
                 ],
@@ -439,119 +250,161 @@ class _ProfileTab extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.cloud_sync_outlined, color: AppColors.primary),
-                    title: Text('ซิงค์ข้อมูลกับ Firestore', style: AppTypography.bodyMedium),
-                    subtitle: Text('เชื่อมต่อ Firebase และสำรองข้อมูล', style: AppTypography.bodySmall),
+                    leading: const Icon(
+                      Icons.cloud_sync_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'ซิงค์ข้อมูลกับ Firestore',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'เชื่อมต่อ Firebase และสำรองข้อมูล',
+                      style: AppTypography.bodySmall,
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () async {
-                      final ok = await context.read<NutritionProvider>().syncCloud();
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final provider = context.read<NutritionProvider>();
+                      UserModel? authUser;
+                      try {
+                        authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+                      } catch (_) {}
+
+                      // Guest restriction: Guests cannot backup to cloud
+                      if (authUser?.isAnonymous == true) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text('โหมดผู้เยี่ยมชมไม่รองรับ Cloud Sync กรุณาเข้าสู่ระบบด้วย Google หรืออีเมล'),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFE11D48),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                        return;
+                      }
+                      if (authUser != null) {
+                        final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
+                            ? authUser.email!.trim()
+                            : authUser.id;
+                        provider.updateUserInfo(
+                          newUserId: effectiveId,
+                          email: authUser.email,
+                          displayName: authUser.displayName,
+                          dailyTarget: authUser.dailyCalorieTarget,
+                        );
+                      }
+                      final ok = await provider.syncCloud();
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(ok ? 'ซิงค์ข้อมูลแล้ว' : 'ไม่สามารถซิงค์ได้')),
+                        final name = authUser?.displayName.isNotEmpty == true ? authUser!.displayName : (authUser?.email ?? 'ผู้ใช้');
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Text(ok
+                                ? 'ซิงค์ข้อมูลกับ Firestore สำเร็จ (ผู้ใช้: $name)'
+                                : 'ไม่สามารถซิงค์ได้: ${provider.errorMessage ?? "เกิดข้อผิดพลาด"}'),
+                            backgroundColor: ok ? const Color(0xFF16A34A) : Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
                         );
                       }
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.psychology_outlined, color: AppColors.primary),
-                    title: Text('Gemini API Integration', style: AppTypography.bodyMedium),
-                    subtitle: Text('โมเดล: Gemini 1.5 Flash Vision (แตะเพื่อตั้งค่า Key)', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
-                    onTap: () async {
-                      final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
-                      final controller = TextEditingController(text: savedKey);
-
-                      if (!context.mounted) return;
-                      showDialog(
-                        context: context,
-                        builder: (ctx) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            title: Row(
-                              children: [
-                                const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
-                                const SizedBox(width: 8),
-                                Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
-                              ],
-                            ),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision จาก Google AI Studio:',
-                                  style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: controller,
-                                  decoration: InputDecoration(
-                                    hintText: 'AIzaSy...',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                    prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '* หากเว้นว่าง ระบบจะใช้โหมดจำลอง (Demo Mode) อัตโนมัติ',
-                                  style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('ยกเลิก'),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF7C3AED),
-                                  foregroundColor: Colors.white,
-                                ),
-                                onPressed: () async {
-                                  final key = controller.text.trim();
-                                  await GeminiServiceImpl.saveApiKey(key);
-                                  if (context.mounted) {
-                                    context.read<NutritionProvider>().repository.geminiService.updateApiKey(key.isNotEmpty ? key : null);
-                                  }
-                                  if (!context.mounted) return;
-                                  Navigator.of(ctx).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(key.isNotEmpty
-                                          ? 'บันทึก Gemini API Key สำเร็จ'
-                                          : 'ใช้งานโหมดจำลอง (Demo Mode)'),
-                                    ),
-                                  );
-                                },
-                                child: const Text('บันทึก'),
+                    leading: const Icon(
+                      Icons.psychology_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'Gemini API Integration',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'โมเดล: Gemini 1.5 Flash Vision (ระบบล็อคความปลอดภัยถาวร 🔒)',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.lock_rounded,
+                      color: AppColors.success,
+                      size: 20,
+                    ),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: const [
+                              Icon(Icons.lock_rounded, color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text('🔒 Gemini API Key ถูกล็อคและเข้ารหัสถาวรในระบบ ไม่อนุญาตให้เปิดเผยหรือแก้ไข'),
                               ),
                             ],
-                          );
-                        },
+                          ),
+                          backgroundColor: const Color(0xFF1E1B4B),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          duration: const Duration(seconds: 3),
+                        ),
                       );
                     },
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.storage_outlined, color: AppColors.primary),
-                    title: Text('ฐานข้อมูลท้องถิ่น (Local DB)', style: AppTypography.bodyMedium),
-                    subtitle: Text('ขับเคลื่อนโดย Hive NoSQL Database', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                    leading: const Icon(
+                      Icons.storage_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      'ฐานข้อมูลท้องถิ่น (Local DB)',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'ขับเคลื่อนโดย Hive NoSQL Database',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 20,
+                    ),
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                    title: Text('ออกจากระบบ', style: AppTypography.bodyMedium.copyWith(color: AppColors.error)),
-                    subtitle: Text('ออกจากบัญชีและกลับไปที่หน้าเข้าสู่ระบบ', style: AppTypography.bodySmall),
-                    trailing: const Icon(Icons.chevron_right, color: AppColors.error),
+                    leading: const Icon(
+                      Icons.logout_rounded,
+                      color: AppColors.error,
+                    ),
+                    title: Text(
+                      'ออกจากระบบ',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.error,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'ออกจากบัญชีและกลับไปที่หน้าเข้าสู่ระบบ',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.error,
+                    ),
                     onTap: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('ออกจากระบบ'),
-                          content: const Text('คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?'),
+                          content: const Text(
+                            'คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?',
+                          ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(false),
@@ -559,7 +412,10 @@ class _ProfileTab extends StatelessWidget {
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(ctx).pop(true),
-                              child: const Text('ออกจากระบบ', style: TextStyle(color: Colors.red)),
+                              child: const Text(
+                                'ออกจากระบบ',
+                                style: TextStyle(color: Colors.red),
+                              ),
                             ),
                           ],
                         ),
@@ -569,7 +425,9 @@ class _ProfileTab extends StatelessWidget {
                         await context.read<AuthProvider>().signOut();
                         if (context.mounted) {
                           Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
                             (route) => false,
                           );
                         }

@@ -11,17 +11,22 @@ void main() {
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
-      child: const MaterialApp(
-        home: SplashScreen(),
-      ),
+      child: const MaterialApp(home: SplashScreen()),
     );
   }
 
   group('SplashScreen Widget Tests', () {
-    testWidgets('renders all Figma Screen 1 visual elements correctly', (tester) async {
+    testWidgets('renders all Figma Screen 1 visual elements correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -38,7 +43,10 @@ void main() {
       expect(find.text('แม่นยำ'), findsOneWidget);
 
       // Open Food Facts & Gemini API badge
-      expect(find.text('ขับเคลื่อนโดย Open Food Facts & Gemini API'), findsOneWidget);
+      expect(
+        find.text('ขับเคลื่อนโดย Open Food Facts & Gemini API'),
+        findsOneWidget,
+      );
 
       // CTA Button
       expect(find.text('เริ่มต้นใช้งาน'), findsOneWidget);
@@ -48,7 +56,9 @@ void main() {
       expect(find.textContaining('มีบัญชีอยู่แล้วใช่หรือไม่?'), findsOneWidget);
     });
 
-    testWidgets('tapping CTA button navigates to onboarding screen', (tester) async {
+    testWidgets('tapping CTA button navigates to onboarding screen', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -62,7 +72,9 @@ void main() {
       expect(find.text('ฟีเจอร์ถัดไป'), findsOneWidget);
     });
 
-    testWidgets('tapping login link navigates directly to LoginScreen', (tester) async {
+    testWidgets('tapping login link navigates directly to LoginScreen', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -75,7 +87,10 @@ void main() {
 
       // Should find login screen content
       expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
-      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
+      expect(
+        find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
+        findsOneWidget,
+      );
     });
   });
 }

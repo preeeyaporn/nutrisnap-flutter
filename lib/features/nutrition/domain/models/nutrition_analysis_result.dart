@@ -105,7 +105,8 @@ class NutritionAnalysisResult {
       sodium: (map['sodium'] as num?)?.toDouble() ?? 780.0,
       confidence: (map['confidence'] as num?)?.toDouble() ?? 0.9,
       healthScore: map['healthScore']?.toString() ?? 'เกรด B',
-      detectedIngredients: (map['detectedIngredients'] as List<dynamic>?)
+      detectedIngredients:
+          (map['detectedIngredients'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

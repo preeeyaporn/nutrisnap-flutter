@@ -11,17 +11,22 @@ void main() {
   Widget createTestWidget() {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl())),
-        ChangeNotifierProvider(create: (_) => NutritionProvider(repository: NutriSnapRepositoryImpl())),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: FirebaseAuthServiceImpl()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              NutritionProvider(repository: NutriSnapRepositoryImpl()),
+        ),
       ],
-      child: const MaterialApp(
-        home: MainShellScreen(),
-      ),
+      child: const MaterialApp(home: MainShellScreen()),
     );
   }
 
   group('MainShellScreen Widget Tests', () {
-    testWidgets('renders bottom navigation with 4 tabs and switches', (tester) async {
+    testWidgets('renders bottom navigation with 4 tabs and switches', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -39,13 +44,14 @@ void main() {
       await tester.tap(find.text('ประวัติ'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('ประวัติการสแกนและโภชนาการ'), findsOneWidget);
+      expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
 
-      // Switch to Sync tab
+      // Switch to Sync Offline tab
       await tester.tap(find.text('ซิงค์ข้อมูล'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Cloud Firestore Synchronization'), findsOneWidget);
+      expect(find.text('สถานะการซิงค์'), findsOneWidget);
+      expect(find.text('ความสามารถของอุปกรณ์ขณะออฟไลน์'), findsOneWidget);
 
       // Switch to Settings/Profile tab
       await tester.tap(find.text('ตั้งค่า'));
@@ -56,7 +62,9 @@ void main() {
       expect(find.text('ออกจากระบบ'), findsOneWidget);
     });
 
-    testWidgets('sign out dialog confirms and navigates to LoginScreen', (tester) async {
+    testWidgets('sign out dialog confirms and navigates to LoginScreen', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -85,7 +93,10 @@ void main() {
 
       // Navigated to LoginScreen
       expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
-      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
+      expect(
+        find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
+        findsOneWidget,
+      );
     });
   });
 }

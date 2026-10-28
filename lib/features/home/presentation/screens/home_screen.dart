@@ -12,10 +12,7 @@ import 'package:nutrisnap/features/scanner/presentation/screens/barcode_scanner_
 class HomeScreen extends StatelessWidget {
   final void Function(int tabIndex)? onNavigateTab;
 
-  const HomeScreen({
-    super.key,
-    this.onNavigateTab,
-  });
+  const HomeScreen({super.key, this.onNavigateTab});
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -37,7 +34,7 @@ class HomeScreen extends StatelessWidget {
       'วันพฤหัสบดี',
       'วันศุกร์',
       'วันเสาร์',
-      'วันอาทิตย์'
+      'วันอาทิตย์',
     ];
     const months = [
       'ม.ค.',
@@ -51,7 +48,7 @@ class HomeScreen extends StatelessWidget {
       'ก.ย.',
       'ต.ค.',
       'พ.ย.',
-      'ธ.ค.'
+      'ธ.ค.',
     ];
     final dayName = days[now.weekday - 1];
     final monthName = months[now.month - 1];
@@ -204,13 +201,17 @@ class HomeScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        ok ? 'ซิงค์ข้อมูลกับ Firestore เรียบร้อยแล้ว' : 'ซิงค์ข้อมูลไม่สำเร็จ',
+                        ok
+                            ? 'ซิงค์ข้อมูลกับ Firestore เรียบร้อยแล้ว'
+                            : 'ซิงค์ข้อมูลไม่สำเร็จ',
                         style: const TextStyle(color: Colors.white),
                       ),
                       backgroundColor: ok ? AppColors.success : AppColors.error,
                       duration: const Duration(seconds: 2),
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   );
                 }
@@ -314,10 +315,18 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSummaryCard(BuildContext context) {
     final recentScans = context.watch<NutritionProvider>().recentScans;
     final mealsCount = recentScans.length;
-    final totalCalories = recentScans.fold<double>(0, (sum, item) => sum + item.calories).toInt();
-    final totalProtein = recentScans.fold<double>(0, (sum, item) => sum + item.protein).toInt();
-    final totalCarbs = recentScans.fold<double>(0, (sum, item) => sum + item.carbohydrates).toInt();
-    final totalFat = recentScans.fold<double>(0, (sum, item) => sum + item.fat).toInt();
+    final totalCalories = recentScans
+        .fold<double>(0, (sum, item) => sum + item.calories)
+        .toInt();
+    final totalProtein = recentScans
+        .fold<double>(0, (sum, item) => sum + item.protein)
+        .toInt();
+    final totalCarbs = recentScans
+        .fold<double>(0, (sum, item) => sum + item.carbohydrates)
+        .toInt();
+    final totalFat = recentScans
+        .fold<double>(0, (sum, item) => sum + item.fat)
+        .toInt();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -373,7 +382,10 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE9D5FF),
                   borderRadius: BorderRadius.circular(16),
@@ -443,10 +455,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMacroChip({
-    required String label,
-    required Color dotColor,
-  }) {
+  Widget _buildMacroChip({required String label, required Color dotColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -466,10 +475,7 @@ class HomeScreen extends StatelessWidget {
           Container(
             width: 7,
             height: 7,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -722,7 +728,10 @@ class HomeScreen extends StatelessWidget {
                 );
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     // Meal Image / Placeholder Icon
@@ -732,7 +741,9 @@ class HomeScreen extends StatelessWidget {
                         width: 58,
                         height: 58,
                         color: Colors.white,
-                        child: item.imageUrl != null && item.imageUrl!.startsWith('http')
+                        child:
+                            item.imageUrl != null &&
+                                item.imageUrl!.startsWith('http')
                             ? Image.network(
                                 item.imageUrl!,
                                 fit: BoxFit.cover,
@@ -842,9 +853,7 @@ class HomeScreen extends StatelessWidget {
     }
     return Container(
       color: const Color(0xFFEDE9FE),
-      child: Center(
-        child: Icon(iconData, color: AppColors.primary, size: 28),
-      ),
+      child: Center(child: Icon(iconData, color: AppColors.primary, size: 28)),
     );
   }
 

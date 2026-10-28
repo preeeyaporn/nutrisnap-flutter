@@ -1,10 +1,13 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
-import 'package:nutrisnap/core/services/gemini_service.dart';
+import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/camera/presentation/screens/ai_analysis_result_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
@@ -19,6 +22,7 @@ class AiFoodCameraScreen extends StatefulWidget {
 class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   CameraController? _cameraController;
+  Timer? _retryTimer;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _isInitializing = false;
@@ -30,8 +34,6 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   @override
   void initState() {
     super.initState();
-    
-
 
     WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
@@ -48,8 +50,8 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     } else {
       _initCamera();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_isCameraInitialized) {
-          Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted && !_isCameraInitialized && !Platform.environment.containsKey('FLUTTER_TEST')) {
+          _retryTimer = Timer(const Duration(milliseconds: 1200), () {
             if (mounted && !_isCameraInitialized) {
               _initCamera();
             }
@@ -160,6 +162,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pulseController.dispose();
     if (widget.cameraController == null) {
@@ -196,6 +199,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   }
 
   Future<void> _pickFromGalleryAndAnalyze() async {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
+
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
 
@@ -244,6 +253,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   }
 
   Future<void> _captureAndAnalyze() async {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
+
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
 
@@ -281,79 +296,59 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     }
   }
 
-  void _showGeminiApiKeyDialog() async {
-    final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
-    final controller = TextEditingController(text: savedKey);
-
-    if (!mounted) return;
+  void _showGuestLockedDialog() {
     showDialog(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
-              const SizedBox(width: 8),
-              Text('ตั้งค่า Gemini API Key', style: AppTypography.heading3.copyWith(fontSize: 16)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision วิเคราะห์ภาพอาหารจริงจาก Google AI Studio:',
-                style: AppTypography.bodySmall.copyWith(color: const Color(0xFF475569)),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.lock_rounded, color: Color(0xFFE11D48)),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'เฉพาะสมาชิกเท่านั้น',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: 'AIzaSy...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFF7C3AED)),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '* หากไม่ระบุ ระบบจะใช้โหมดจำลองความแม่นยำสูง (Demo Fallback)',
-                style: AppTypography.bodySmall.copyWith(fontSize: 11, color: const Color(0xFF94A3B8)),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('ยกเลิก'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                final key = controller.text.trim();
-                await GeminiServiceImpl.saveApiKey(key);
-                if (!ctx.mounted) return;
-                Navigator.of(ctx).pop();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(key.isNotEmpty
-                        ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
-                        : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)'),
-                  ),
-                );
-              },
-              child: const Text('บันทึก'),
             ),
           ],
-        );
-      },
+        ),
+        content: const Text('โหมดผู้เยี่ยมชมไม่สามารถใช้ AI วิเคราะห์ภาพอาหารได้ กรุณาเข้าสู่ระบบด้วย Google เพื่อเริ่มใช้งาน'),
+        actionsOverflowButtonSpacing: 8,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('ปิด'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('เข้าสู่ระบบด้วย Google'),
+          ),
+        ],
+      ),
     );
   }
 
+  void _showGeminiApiKeyNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔒 Gemini API Key ถูกล็อคและเข้ารหัสถาวรในระบบ ไม่อนุญาตให้เปิดเผยหรือแก้ไข'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -384,14 +379,21 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   Expanded(
                     child: Center(
                       child: GestureDetector(
-                        onTap: _showGeminiApiKeyDialog,
+                        onTap: _showGeminiApiKeyNotice,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF272733).withValues(alpha: 0.85),
+                            color: const Color(
+                              0xFF272733,
+                            ).withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                              color: const Color(
+                                0xFF8B5CF6,
+                              ).withValues(alpha: 0.35),
                             ),
                           ),
                           child: FittedBox(
@@ -431,7 +433,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
                   // Flash button
                   _buildCircleButton(
-                    icon: _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                    icon: _isFlashOn
+                        ? Icons.flash_on_rounded
+                        : Icons.flash_off_rounded,
                     color: _isFlashOn ? Colors.amber : Colors.white,
                     onTap: _toggleFlash,
                   ),
@@ -451,7 +455,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   Positioned(
                     top: 18,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(20),
@@ -519,9 +526,14 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                     right: 20,
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E28).withValues(alpha: 0.90),
+                          color: const Color(
+                            0xFF1E1E28,
+                          ).withValues(alpha: 0.90),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.12),
@@ -612,7 +624,9 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                               border: Border.all(color: Colors.white, width: 4),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
+                                  color: const Color(
+                                    0xFF7C3AED,
+                                  ).withValues(alpha: 0.4),
                                   blurRadius: 18,
                                   spreadRadius: 2,
                                 ),
@@ -693,17 +707,24 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                         ),
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 20,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFF1E1E2D),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: const Color(0xFF7C3AED).withValues(alpha: 0.5),
+                                color: const Color(
+                                  0xFF7C3AED,
+                                ).withValues(alpha: 0.5),
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                                  color: const Color(
+                                    0xFF7C3AED,
+                                  ).withValues(alpha: 0.3),
                                   blurRadius: 16,
                                   spreadRadius: 2,
                                 ),
@@ -772,7 +793,10 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF3E8FF),
                           borderRadius: BorderRadius.circular(14),
@@ -820,9 +844,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 12),
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(26)),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final size = _cameraController!.value.previewSize;
@@ -923,19 +945,29 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _isInitializing ? null : _initCamera,
                 icon: _isInitializing
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.videocam_rounded, size: 18),
                 label: Text(
-                  _isInitializing ? 'กำลังเปิดกล้อง...' : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
+                  _isInitializing
+                      ? 'กำลังเปิดกล้อง...'
+                      : 'แตะเพื่อเปิดกล้อง / ลองใหม่',
                   style: AppTypography.buttonText.copyWith(fontSize: 13),
                 ),
               ),

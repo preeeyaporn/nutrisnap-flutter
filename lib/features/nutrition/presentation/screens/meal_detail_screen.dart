@@ -36,8 +36,18 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   String _formatThaiDateTime(DateTime dt) {
     const months = [
-      'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-      'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+      'ม.ค.',
+      'ก.พ.',
+      'มี.ค.',
+      'เม.ย.',
+      'พ.ค.',
+      'มิ.ย.',
+      'ก.ค.',
+      'ส.ค.',
+      'ก.ย.',
+      'ต.ค.',
+      'พ.ย.',
+      'ธ.ค.',
     ];
     final year = dt.year + 543;
     final month = months[dt.month - 1];
@@ -56,14 +66,18 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   void _showEditDialog() {
     final nameCtrl = TextEditingController(text: _item.name);
-    final caloriesCtrl = TextEditingController(text: _item.calories.toInt().toString());
+    final caloriesCtrl = TextEditingController(
+      text: _item.calories.toInt().toString(),
+    );
     final portionCtrl = TextEditingController(text: _item.servingSize);
 
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text('แก้ไขข้อมูลมื้ออาหาร', style: AppTypography.heading3),
           content: SingleChildScrollView(
             child: Column(
@@ -76,13 +90,17 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: portionCtrl,
-                  decoration: const InputDecoration(labelText: 'ปริมาณ / สัดส่วน'),
+                  decoration: const InputDecoration(
+                    labelText: 'ปริมาณ / สัดส่วน',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: caloriesCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'พลังงาน (กิโลแคลอรี่)'),
+                  decoration: const InputDecoration(
+                    labelText: 'พลังงาน (กิโลแคลอรี่)',
+                  ),
                 ),
               ],
             ),
@@ -100,11 +118,14 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               onPressed: () async {
                 final newName = nameCtrl.text.trim();
                 final newPortion = portionCtrl.text.trim();
-                final newCal = double.tryParse(caloriesCtrl.text.trim()) ?? _item.calories;
+                final newCal =
+                    double.tryParse(caloriesCtrl.text.trim()) ?? _item.calories;
 
                 final updated = _item.copyWith(
                   name: newName.isNotEmpty ? newName : _item.name,
-                  servingSize: newPortion.isNotEmpty ? newPortion : _item.servingSize,
+                  servingSize: newPortion.isNotEmpty
+                      ? newPortion
+                      : _item.servingSize,
                   calories: newCal,
                 );
 
@@ -134,9 +155,13 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text('ลบรายการอาหาร?', style: AppTypography.heading3),
-          content: Text('คุณต้องการลบ "${_item.name}" ออกจากสมุดบันทึกอาหารใช่หรือไม่?'),
+          content: Text(
+            'คุณต้องการลบ "${_item.name}" ออกจากสมุดบันทึกอาหารใช่หรือไม่?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -176,9 +201,15 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     final sodium = _item.sodium > 0 ? _item.sodium : 780.0;
 
     final totalMacros = (protein * 4) + (carbs * 4) + (fat * 9);
-    final proteinPercent = totalMacros > 0 ? ((protein * 4) / totalMacros * 100).round() : 23;
-    final carbsPercent = totalMacros > 0 ? ((carbs * 4) / totalMacros * 100).round() : 39;
-    final fatPercent = totalMacros > 0 ? ((fat * 9) / totalMacros * 100).round() : 38;
+    final proteinPercent = totalMacros > 0
+        ? ((protein * 4) / totalMacros * 100).round()
+        : 23;
+    final carbsPercent = totalMacros > 0
+        ? ((carbs * 4) / totalMacros * 100).round()
+        : 39;
+    final fatPercent = totalMacros > 0
+        ? ((fat * 9) / totalMacros * 100).round()
+        : 38;
     final quotaPercent = ((calories / 2000.0) * 100).round();
 
     final confidence = widget.analysisResult?.confidence ?? 0.94;
@@ -221,7 +252,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
             child: CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF7C3AED),
-              child: const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -236,7 +271,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEDE9FE),
                     borderRadius: BorderRadius.circular(20),
@@ -395,7 +433,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
                   // Right Box: ยอดโควตาต่อวัน 28%
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
@@ -433,8 +474,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.pie_chart_outline_rounded,
-                        color: Color(0xFF7C3AED), size: 18),
+                    const Icon(
+                      Icons.pie_chart_outline_rounded,
+                      color: Color(0xFF7C3AED),
+                      size: 18,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'สัดส่วนสารอาหารหลัก',
@@ -523,8 +567,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.shield_outlined,
-                              color: Color(0xFF7C3AED), size: 16),
+                          const Icon(
+                            Icons.shield_outlined,
+                            color: Color(0xFF7C3AED),
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text('ใยอาหาร', style: AppTypography.bodyMedium),
                         ],
@@ -541,8 +588,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.water_drop_outlined,
-                              color: Color(0xFF38BDF8), size: 16),
+                          const Icon(
+                            Icons.water_drop_outlined,
+                            color: Color(0xFF38BDF8),
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Text('โซเดียม', style: AppTypography.bodyMedium),
                         ],
@@ -564,8 +614,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.receipt_long_rounded,
-                        color: Color(0xFF7C3AED), size: 18),
+                    const Icon(
+                      Icons.receipt_long_rounded,
+                      color: Color(0xFF7C3AED),
+                      size: 18,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'ส่วนผสมที่ระบุได้',
@@ -578,7 +631,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
@@ -599,7 +655,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               runSpacing: 8,
               children: ingredientsList.map((ingredient) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(14),
@@ -642,8 +701,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded,
-                      color: Color(0xFF7C3AED), size: 18),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFF7C3AED),
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -695,8 +757,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.storage_rounded,
-                          color: Color(0xFF0F172A), size: 18),
+                      const Icon(
+                        Icons.storage_rounded,
+                        color: Color(0xFF0F172A),
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'ระบบบันทึกและซิงค์ข้อมูล',
@@ -716,8 +781,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                       Text('โมเดล AI', style: AppTypography.bodySmall),
                       Row(
                         children: [
-                          const Icon(Icons.auto_awesome,
-                              color: Color(0xFF7C3AED), size: 13),
+                          const Icon(
+                            Icons.auto_awesome,
+                            color: Color(0xFF7C3AED),
+                            size: 13,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Gemini 1.5 Flash Vision',
@@ -815,8 +883,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
             Center(
               child: TextButton.icon(
                 onPressed: _showDeleteDialog,
-                icon: const Icon(Icons.delete_outline_rounded,
-                    color: Color(0xFFEF4444), size: 18),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 18,
+                ),
                 label: Text(
                   'ลบรายการอาหารนี้',
                   style: AppTypography.buttonText.copyWith(
@@ -878,7 +949,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               top: 14,
               right: 14,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(16),
@@ -886,7 +960,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED), size: 13),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Color(0xFF7C3AED),
+                      size: 13,
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       'ตรงกัน $confidencePercent%',
@@ -912,8 +990,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.restaurant_rounded,
-                          color: Color(0xFFA78BFA), size: 14),
+                      const Icon(
+                        Icons.restaurant_rounded,
+                        color: Color(0xFFA78BFA),
+                        size: 14,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         mealTimeTag,
@@ -939,8 +1020,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded,
-                          color: Colors.white70, size: 13),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        color: Colors.white70,
+                        size: 13,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         formattedDateTime,
@@ -979,7 +1063,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
         errorBuilder: (context, error, stackTrace) => Container(
           color: const Color(0xFF334155),
           child: const Center(
-            child: Icon(Icons.restaurant_rounded, color: Colors.white54, size: 54),
+            child: Icon(
+              Icons.restaurant_rounded,
+              color: Colors.white54,
+              size: 54,
+            ),
           ),
         ),
       ),

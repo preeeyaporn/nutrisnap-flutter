@@ -31,10 +31,22 @@ void main() {
     });
 
     test('signInWithEmail logs in and updates state', () async {
-      final ok = await provider.signInWithEmail('test@nutri.com', 'password123');
+      final ok = await provider.signInWithEmail(
+        'test@nutri.com',
+        'password123',
+      );
       expect(ok, isTrue);
       expect(provider.isAuthenticated, isTrue);
       expect(provider.currentUser?.email, 'test@nutri.com');
+    });
+
+    test('signInWithGoogle logs in and updates state with Google account', () async {
+      final ok = await provider.signInWithGoogle();
+      expect(ok, isTrue);
+      expect(provider.isAuthenticated, isTrue);
+      expect(provider.currentUser?.displayName, contains('ปรียาภรณ์'));
+      expect(provider.currentUser?.email, 'preeyapornnr@gmail.com');
+      expect(provider.currentUser?.isAnonymous, isFalse);
     });
 
     test('signOut logs out user', () async {

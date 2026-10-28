@@ -28,11 +28,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'สแกนบรรจุภัณฑ์ในเสี้ยววินาที เพื่อดึงข้อมูลโภชนาการที่ได้รับการตรวจสอบแล้ว โดยไม่ต้องเดาเอง',
       imageAsset: 'assets/images/screen_onboarding.png',
       nutrients: [
-        _NutrientChip(label: 'แคลอรี่', color: AppColors.calorieColor, bg: AppColors.calorieBg),
-        _NutrientChip(label: 'โปรตีน', color: AppColors.proteinColor, bg: AppColors.proteinBg),
-        _NutrientChip(label: 'คาร์โบไฮเดรต', color: AppColors.carbsColor, bg: AppColors.carbsBg),
-        _NutrientChip(label: 'ไขมัน', color: AppColors.fatColor, bg: AppColors.fatBg),
-        _NutrientChip(label: 'น้ำตาล', color: AppColors.sugarColor, bg: AppColors.sugarBg),
+        _NutrientChip(
+          label: 'แคลอรี่',
+          color: AppColors.calorieColor,
+          bg: AppColors.calorieBg,
+        ),
+        _NutrientChip(
+          label: 'โปรตีน',
+          color: AppColors.proteinColor,
+          bg: AppColors.proteinBg,
+        ),
+        _NutrientChip(
+          label: 'คาร์โบไฮเดรต',
+          color: AppColors.carbsColor,
+          bg: AppColors.carbsBg,
+        ),
+        _NutrientChip(
+          label: 'ไขมัน',
+          color: AppColors.fatColor,
+          bg: AppColors.fatBg,
+        ),
+        _NutrientChip(
+          label: 'น้ำตาล',
+          color: AppColors.sugarColor,
+          bg: AppColors.sugarBg,
+        ),
       ],
     ),
     _OnboardingStepData(
@@ -48,10 +68,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'ระบุส่วนผสม ประเมินพลังงาน พร้อมให้คำแนะนำโภชนาการที่เหมาะกับร่างกายของคุณแบบเฉพาะเจาะจง',
       imageAsset: 'assets/images/screen_camera.png',
       nutrients: [
-        _NutrientChip(label: 'พลังงานรวม', color: AppColors.calorieColor, bg: AppColors.calorieBg),
-        _NutrientChip(label: 'โปรตีนแท้', color: AppColors.proteinColor, bg: AppColors.proteinBg),
-        _NutrientChip(label: 'วิตามิน & แร่ธาตุ', color: AppColors.success, bg: AppColors.successLight),
-        _NutrientChip(label: 'ไฟเบอร์', color: AppColors.carbsColor, bg: AppColors.carbsBg),
+        _NutrientChip(
+          label: 'พลังงานรวม',
+          color: AppColors.calorieColor,
+          bg: AppColors.calorieBg,
+        ),
+        _NutrientChip(
+          label: 'โปรตีนแท้',
+          color: AppColors.proteinColor,
+          bg: AppColors.proteinBg,
+        ),
+        _NutrientChip(
+          label: 'วิตามิน & แร่ธาตุ',
+          color: AppColors.success,
+          bg: AppColors.successLight,
+        ),
+        _NutrientChip(
+          label: 'ไฟเบอร์',
+          color: AppColors.carbsColor,
+          bg: AppColors.carbsBg,
+        ),
       ],
     ),
     _OnboardingStepData(
@@ -67,9 +103,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           'เข้าถึงข้อมูลได้ทุกที่แม้ไม่มีสัญญาณอินเทอร์เน็ตด้วยระบบแคชท้องถิ่น Hive และซิงค์ขึ้น Firestore ทันทีเมื่อต่อเน็ต',
       imageAsset: 'assets/images/screen_barcode.png',
       nutrients: [
-        _NutrientChip(label: 'เกรด A', color: AppColors.proteinColor, bg: AppColors.proteinBg),
-        _NutrientChip(label: 'บันทึกอัตโนมัติ', color: AppColors.calorieColor, bg: AppColors.calorieBg),
-        _NutrientChip(label: 'ปลอดภัย 100%', color: AppColors.success, bg: AppColors.successLight),
+        _NutrientChip(
+          label: 'เกรด A',
+          color: AppColors.proteinColor,
+          bg: AppColors.proteinBg,
+        ),
+        _NutrientChip(
+          label: 'บันทึกอัตโนมัติ',
+          color: AppColors.calorieColor,
+          bg: AppColors.calorieBg,
+        ),
+        _NutrientChip(
+          label: 'ปลอดภัย 100%',
+          color: AppColors.success,
+          bg: AppColors.successLight,
+        ),
       ],
     ),
   ];
@@ -136,7 +184,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   GestureDetector(
                     onTap: _finishOnboarding,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(20),
@@ -214,7 +265,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                            border: Border.all(
+                              color: const Color(0xFFE2E8F0),
+                              width: 1.2,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.04),
@@ -241,15 +295,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       child: Image.asset(
                                         step.imageAsset,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(
-                                          color: const Color(0xFFE2E8F0),
-                                          child: const Icon(
-                                            Icons.image_search_rounded,
-                                            size: 48,
-                                            color: Color(0xFF94A3B8),
-                                          ),
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  color: const Color(
+                                                    0xFFE2E8F0,
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.image_search_rounded,
+                                                    size: 48,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                ),
                                       ),
                                     ),
                                     // Top Left Badge: "● ฐานข้อมูล Open Food Facts API"
@@ -262,8 +319,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                           vertical: 5,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.92),
-                                          borderRadius: BorderRadius.circular(16),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.92,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -279,11 +340,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                             const SizedBox(width: 6),
                                             Text(
                                               step.cardBadge,
-                                              style: AppTypography.chipText.copyWith(
-                                                color: const Color(0xFF1E293B),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                              style: AppTypography.chipText
+                                                  .copyWith(
+                                                    color: const Color(
+                                                      0xFF1E293B,
+                                                    ),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -299,16 +363,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                           vertical: 5,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.92),
-                                          borderRadius: BorderRadius.circular(16),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.92,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
                                         child: Text(
                                           step.cardActionText,
-                                          style: AppTypography.chipText.copyWith(
-                                            color: const Color(0xFF334155),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          style: AppTypography.chipText
+                                              .copyWith(
+                                                color: const Color(0xFF334155),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -329,7 +398,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                           padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF3E8FF),
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
                                           child: Icon(
                                             step.featureIcon,
@@ -341,11 +412,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                         Expanded(
                                           child: Text(
                                             step.featureTitle,
-                                            style: AppTypography.heading3.copyWith(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF0F172A),
-                                            ),
+                                            style: AppTypography.heading3
+                                                .copyWith(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: const Color(
+                                                    0xFF0F172A,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -375,7 +449,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: n.bg,
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -391,11 +467,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                               const SizedBox(width: 6),
                                               Text(
                                                 n.label,
-                                                style: AppTypography.chipText.copyWith(
-                                                  color: n.color,
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                                style: AppTypography.chipText
+                                                    .copyWith(
+                                                      color: n.color,
+                                                      fontSize: 11.5,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -432,7 +510,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         width: isActive ? 24 : 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: isActive ? const Color(0xFF7C3AED) : const Color(0xFFE2E8F0),
+                          color: isActive
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFFE2E8F0),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       );
@@ -452,7 +532,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         borderRadius: BorderRadius.circular(27),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFF7C3AED,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),

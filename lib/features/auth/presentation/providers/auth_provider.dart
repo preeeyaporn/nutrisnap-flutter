@@ -9,7 +9,7 @@ class AuthProvider extends ChangeNotifier {
   String? _errorMessage;
 
   AuthProvider({FirebaseAuthService? authService})
-      : _authService = authService ?? FirebaseAuthServiceImpl() {
+    : _authService = authService ?? FirebaseAuthServiceImpl() {
     _init();
   }
 
@@ -31,7 +31,10 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _authService.signInWithEmailAndPassword(email, password);
+    final result = await _authService.signInWithEmailAndPassword(
+      email,
+      password,
+    );
     _isLoading = false;
 
     return result.when(
@@ -84,6 +87,40 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _authService.signInAnonymously();
+    _isLoading = false;
+
+    return result.when(
+      success: (user) {
+        _currentUser = user;
+        notifyListeners();
+        return true;
+      },
+      failure: (message, exception) {
+        _errorMessage = message;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
+  Future<List<UserModel>> getSavedGoogleUsers() async {
+    return _authService.getSavedGoogleUsers();
+  }
+
+  Future<bool> signInWithGoogle({
+    String? email,
+    String? displayName,
+    String? photoUrl,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _authService.signInWithGoogle(
+      customEmail: email,
+      customDisplayName: displayName,
+      customPhotoUrl: photoUrl,
+    );
     _isLoading = false;
 
     return result.when(

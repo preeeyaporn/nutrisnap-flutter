@@ -3,20 +3,23 @@ sealed class Result<T> {
   const Result();
 
   const factory Result.success(T data) = Success<T>;
-  const factory Result.failure(String message, [Exception? exception]) = Failure<T>;
+  const factory Result.failure(String message, [Exception? exception]) =
+      Failure<T>;
 
   bool get isSuccess => this is Success<T>;
   bool get isFailure => this is Failure<T>;
 
   T? get dataOrNull => switch (this) {
-        Success(data: final d) => d,
-        Failure() => null,
-      };
+    Success(data: final d) => d,
+    Failure() => null,
+  };
 
   String? get errorOrNull => switch (this) {
-        Success() => null,
-        Failure(message: final m) => m,
-      };
+    Success() => null,
+    Failure(message: final m) => m,
+  };
+
+  String? get errorMessage => errorOrNull;
 
   R when<R>({
     required R Function(T data) success,

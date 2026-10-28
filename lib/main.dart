@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -11,10 +12,20 @@ import 'core/services/open_food_facts_service.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/nutrition/data/repositories/nutrisnap_repository_impl.dart';
 import 'features/nutrition/presentation/providers/nutrition_provider.dart';
+import 'firebase_options.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase Cloud Services
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization notice: $e');
+  }
 
   // Initialize Hive Local Database
   try {
@@ -47,11 +58,15 @@ void main() async {
     geminiService: geminiService,
   );
 
+  // ซิงค์อัปเดตข้อมูลโภชนาการตามกรอบ GDA ล่าสุดให้รายการในเครื่องอัตโนมัติ (โดยคงรายการที่ผู้ใช้แก้ไขเอง is_user_edited = true ไว้)
+  try {
+    await nutrisnapRepository.getAllFoodItems();
+  } catch (e) {
+    debugPrint('Initial GDA sync notice: $e');
+  }
+
   runApp(
-    NutriSnapApp(
-      authService: authService,
-      repository: nutrisnapRepository,
-    ),
+    NutriSnapApp(authService: authService, repository: nutrisnapRepository),
   );
 }
 
@@ -59,11 +74,7 @@ class NutriSnapApp extends StatelessWidget {
   final FirebaseAuthService? authService;
   final NutriSnapRepositoryImpl? repository;
 
-  const NutriSnapApp({
-    super.key,
-    this.authService,
-    this.repository,
-  });
+  const NutriSnapApp({super.key, this.authService, this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +83,23 @@ class NutriSnapApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService: authService),
         ),
-        ChangeNotifierProvider(
+        ChangeNotifierProxyProvider<AuthProvider, NutritionProvider>(
           create: (_) => NutritionProvider(repository: repository),
+          update: (_, authProvider, nutritionProvider) {
+            final user = authProvider.currentUser;
+            if (user != null) {
+              final effectiveId = (user.email != null && user.email!.contains('@'))
+                  ? user.email!.trim()
+                  : user.id;
+              nutritionProvider?.updateUserInfo(
+                newUserId: effectiveId,
+                email: user.email,
+                displayName: user.displayName,
+                dailyTarget: user.dailyCalorieTarget,
+              );
+            }
+            return nutritionProvider!;
+          },
         ),
       ],
       child: MaterialApp(
@@ -120,7 +146,9 @@ class NutriSnapApp extends StatelessWidget {
                             offset: const Offset(0, 15),
                           ),
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                            color: const Color(
+                              0xFF7C3AED,
+                            ).withValues(alpha: 0.25),
                             blurRadius: 60,
                             spreadRadius: 10,
                           ),

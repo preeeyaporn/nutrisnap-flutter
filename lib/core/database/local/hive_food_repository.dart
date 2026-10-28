@@ -152,4 +152,40 @@ class HiveFoodRepository implements FoodRepository {
       return Result.failure('ล้างข้อมูลล้มเหลว: $e');
     }
   }
+
+  Future<Result<List<FoodItem>>> getUnsyncedFoodItems() async {
+    try {
+      final allResult = await getAllFoodItems();
+      return allResult.when(
+        success: (items) {
+          final unsynced = items.where((item) => !item.isSynced).toList();
+          return Result.success(unsynced);
+        },
+        failure: (msg, ex) => Result.failure(msg, ex),
+      );
+    } catch (e) {
+      return Result.failure('ไม่สามารถดึงข้อมูลที่ยังไม่ได้ซิงค์: $e');
+    }
+  }
+
+  Future<Result<void>> markAsSynced(List<String> ids) async {
+    try {
+      final box = await _getBox();
+      for (final id in ids) {
+        final Map? data = box != null ? box.get(id) : _fallbackStore[id];
+        if (data != null) {
+          final map = Map<String, dynamic>.from(data);
+          map['isSynced'] = true;
+          if (box != null) {
+            await box.put(id, map);
+          } else {
+            _fallbackStore[id] = map;
+          }
+        }
+      }
+      return Result.success(null);
+    } catch (e) {
+      return Result.failure('อัปเดตสถานะซิงค์ไม่สำเร็จ: $e');
+    }
+  }
 }

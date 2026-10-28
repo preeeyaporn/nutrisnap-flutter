@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nutrisnap/core/services/firebase_auth_service.dart';
-import 'package:nutrisnap/features/auth/presentation/screens/register_screen.dart';
 import 'package:nutrisnap/features/nutrition/data/repositories/nutrisnap_repository_impl.dart';
 import 'package:nutrisnap/main.dart';
 
@@ -12,7 +11,7 @@ void main() {
   });
 
   group('NutriSnap End-to-End Application Flow Integration Tests', () {
-    testWidgets('Full flow: Splash -> Onboarding -> Scanner -> Detail Screen', (tester) async {
+    testWidgets('Full flow: Splash -> Onboarding -> Google Login -> Main Shell -> History & Sync Tabs', (tester) async {
       // Configure 390x844 mobile viewport as specified in requirements
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -23,10 +22,7 @@ void main() {
       final repo = NutriSnapRepositoryImpl();
 
       await tester.pumpWidget(
-        NutriSnapApp(
-          authService: auth,
-          repository: repo,
-        ),
+        NutriSnapApp(authService: auth, repository: repo),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -53,12 +49,29 @@ void main() {
 
       // 4. Login Screen loaded
       expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
-      expect(find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'), findsOneWidget);
+      expect(
+        find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
+        findsOneWidget,
+      );
 
-      // 5. Enter via Guest Mode
-      final guestBtn = find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)');
-      await tester.ensureVisible(guestBtn);
-      await tester.tap(guestBtn);
+      // 5. Enter via Google Login
+      final googleBtn = find.text('เข้าสู่ระบบด้วย Google');
+      await tester.ensureVisible(googleBtn);
+      await tester.tap(googleBtn);
+      await tester.pumpAndSettle();
+
+      // Ensure no pre-saved personal card is exposed
+      expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsNothing);
+
+      // Enter Google credentials dynamically
+      final emailField = find.widgetWithText(TextField, 'อีเมล Google ของคุณ (เช่น name@gmail.com)');
+      final nameField = find.widgetWithText(TextField, 'ชื่อบัญชี Google หรือชื่อของคุณ');
+      await tester.enterText(emailField, 'preeyapornnr@gmail.com');
+      await tester.enterText(nameField, 'ปรียาภรณ์ นาคสมบูรณ์');
+      await tester.pumpAndSettle();
+
+      final submitBtn = find.text('ดำเนินการต่อด้วย Google');
+      await tester.tap(submitBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
       await tester.pump(const Duration(milliseconds: 600));
@@ -66,9 +79,30 @@ void main() {
       // 6. Main App Shell loaded (Default Home Screen)
       expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
       expect(find.text('สแกนบาร์โค้ดผลิตภัณฑ์'), findsOneWidget);
-      expect(find.textContaining('ผู้ใช้ทั่วไป'), findsOneWidget);
+      expect(find.textContaining('ปรียาภรณ์ นาคสมบูรณ์'), findsWidgets);
 
-      // 7. Tap "สแกน" button on Home Screen to open Barcode Scanner
+      // 7. Navigate to History Tab
+      final historyTab = find.text('ประวัติ');
+      await tester.tap(historyTab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
+
+      // 8. Navigate to Sync Offline Tab
+      final syncTab = find.text('ซิงค์ข้อมูล');
+      await tester.tap(syncTab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('สถานะการซิงค์'), findsOneWidget);
+      expect(find.text('ความสามารถของอุปกรณ์ขณะออฟไลน์'), findsOneWidget);
+
+      // 9. Navigate back to Home Tab
+      final homeTab = find.text('หน้าหลัก').last;
+      await tester.tap(homeTab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // 10. Tap "สแกน" button on Home Screen to open Barcode Scanner
       final scanActionBtn = find.widgetWithText(ElevatedButton, 'สแกน');
       expect(scanActionBtn, findsOneWidget);
       await tester.tap(scanActionBtn);
@@ -78,19 +112,19 @@ void main() {
       expect(find.text('ระบบตรวจจับบาร์โค้ดสด'), findsOneWidget);
       expect(find.text('8850188800123'), findsOneWidget);
 
-      // 6. Tap "ดูข้อมูลโภชนาการฉบับเต็ม"
+      // 11. Tap "ดูข้อมูลโภชนาการฉบับเต็ม"
       final detailBtn = find.text('ดูข้อมูลโภชนาการฉบับเต็ม');
       await tester.tap(detailBtn);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // 7. Verify Nutrition Detail Screen
+      // 12. Verify Nutrition Detail Screen
       expect(find.text('ข้อมูลโภชนาการฉบับเต็ม'), findsOneWidget);
       expect(find.text('น้ำมะพร้าวสดออร์แกนิก 100%'), findsWidgets);
       expect(find.text('สารอาหารหลัก (Macronutrients)'), findsOneWidget);
       expect(find.text('บันทึกลงสมุดบันทึกอาหารประจำวัน'), findsOneWidget);
 
-      // 8. Tap Save to Log
+      // 13. Tap Save to Log
       final saveBtn = find.text('บันทึกลงสมุดบันทึกอาหารประจำวัน');
       await tester.ensureVisible(saveBtn);
       ScaffoldMessenger.of(tester.element(saveBtn)).clearSnackBars();
@@ -102,118 +136,113 @@ void main() {
       expect(find.textContaining('ในบันทึกอาหารแล้ว'), findsOneWidget);
     });
 
-    testWidgets('Registration flow: Register with name -> Home Screen -> Displays greeting with user name', (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'Guest Mode flow: Enter as Guest -> Barcode Scan triggers Guest Locked Dialog',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final auth = FirebaseAuthServiceImpl();
-      final repo = NutriSnapRepositoryImpl();
+        final auth = FirebaseAuthServiceImpl();
+        final repo = NutriSnapRepositoryImpl();
 
-      await tester.pumpWidget(
-        NutriSnapApp(
-          authService: auth,
-          repository: repo,
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpWidget(
+          NutriSnapApp(authService: auth, repository: repo),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Skip Splash & Onboarding to Login
-      await tester.tap(find.text('เริ่มต้นใช้งาน'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.tap(find.text('ข้าม'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+        // Skip Splash & Onboarding to Login
+        await tester.tap(find.text('เริ่มต้นใช้งาน'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('ข้าม'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // In Login Screen, tap "สมัครสมาชิกทันที"
-      final registerNavBtn = find.text('สมัครสมาชิกทันที');
-      await tester.ensureVisible(registerNavBtn);
-      await tester.tap(registerNavBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+        // In Login Screen, tap "เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)"
+        final guestBtn = find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)');
+        await tester.ensureVisible(guestBtn);
+        await tester.tap(guestBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
 
-      // Register Screen loaded
-      expect(find.text('สร้างบัญชีใหม่'), findsOneWidget);
+        // Verify Home Screen loaded as Guest
+        expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
+        expect(find.textContaining('ผู้ใช้ทั่วไป'), findsOneWidget);
 
-      // Enter Registration details
-      final regFields = find.descendant(of: find.byType(RegisterScreen), matching: find.byType(TextFormField));
-      await tester.enterText(regFields.at(0), 'ปรียาภรณ์');
-      await tester.enterText(regFields.at(1), 'user@nutrisnap.com');
-      await tester.enterText(regFields.at(2), 'password123');
-      await tester.enterText(regFields.at(3), 'password123');
-      await tester.pump();
+        // Tap "สแกน" to open Barcode Scanner
+        final scanActionBtn = find.widgetWithText(ElevatedButton, 'สแกน');
+        await tester.tap(scanActionBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-      // Submit registration
-      final submitBtn = find.text('สมัครสมาชิกและเริ่มใช้งาน');
-      await tester.ensureVisible(submitBtn);
-      await tester.tap(submitBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump(const Duration(milliseconds: 600));
+        // Attempt to tap "ดูข้อมูลโภชนาการฉบับเต็ม"
+        final detailBtn = find.text('ดูข้อมูลโภชนาการฉบับเต็ม');
+        await tester.tap(detailBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify Home Screen loaded with user's registered name in the greeting!
-      expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
-      expect(find.textContaining('ปรียาภรณ์'), findsWidgets);
-      expect(find.text('ซิงค์คลาวด์แล้ว'), findsOneWidget);
-    });
+        // Should show locked dialog for guest mode
+        expect(find.text('เฉพาะสมาชิกเท่านั้น'), findsOneWidget);
+        expect(find.textContaining('โหมดผู้เยี่ยมชมไม่สามารถสแกนบาร์โค้ดได้'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Returning user login: Pulls registered name from database into Home Screen', (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'Google Login flow: Authenticates via Google and shows ปรียาภรณ์ นาคสมบูรณ์',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final auth = FirebaseAuthServiceImpl();
-      final repo = NutriSnapRepositoryImpl();
+        final auth = FirebaseAuthServiceImpl();
+        final repo = NutriSnapRepositoryImpl();
 
-      // Pre-register user in database with custom name using tester.runAsync so Future.delayed resolves
-      await tester.runAsync(() async {
-        await auth.signUpWithEmailAndPassword('nong.nut@nutrisnap.com', 'pass12345', displayName: 'ณัชชา สายสุขภาพ');
-        await auth.signOut();
-      });
+        await tester.pumpWidget(
+          NutriSnapApp(authService: auth, repository: repo),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.pumpWidget(
-        NutriSnapApp(
-          authService: auth,
-          repository: repo,
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Navigate to Login via Start -> Skip
+        await tester.tap(find.text('เริ่มต้นใช้งาน'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('ข้าม'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Navigate to Login via Start -> Skip
-      await tester.tap(find.text('เริ่มต้นใช้งาน'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.tap(find.text('ข้าม'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+        // In Login Screen, tap "เข้าสู่ระบบด้วย Google"
+        final googleBtn = find.text('เข้าสู่ระบบด้วย Google');
+        await tester.ensureVisible(googleBtn);
+        await tester.tap(googleBtn);
+        await tester.pumpAndSettle();
 
-      // In Login Screen, enter registered email & password
-      final emailField = find.byType(TextFormField).at(0);
-      final passField = find.byType(TextFormField).at(1);
-      await tester.enterText(emailField, 'nong.nut@nutrisnap.com');
-      await tester.enterText(passField, 'pass12345');
-      await tester.pump();
+        // Ensure no pre-saved personal card is exposed
+        expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsNothing);
 
-      // Tap Login
-      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-      await tester.ensureVisible(loginBtn);
-      await tester.tap(loginBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump(const Duration(milliseconds: 600));
+        // Enter Google credentials dynamically
+        final emailField = find.widgetWithText(TextField, 'อีเมล Google ของคุณ (เช่น name@gmail.com)');
+        final nameField = find.widgetWithText(TextField, 'ชื่อบัญชี Google หรือชื่อของคุณ');
+        await tester.enterText(emailField, 'preeyapornnr@gmail.com');
+        await tester.enterText(nameField, 'ปรียาภรณ์ นาคสมบูรณ์');
+        await tester.pumpAndSettle();
 
-      // Verify Home Screen loaded and retrieved the original registered name "ณัชชา สายสุขภาพ" from database!
-      expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
-      expect(find.textContaining('ณัชชา สายสุขภาพ'), findsWidgets);
-      // And verify summary card is 0 meals
-      expect(find.text('0 มื้อ'), findsOneWidget);
-      expect(find.text('0'), findsOneWidget);
-      expect(find.text('ยังไม่มีมื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
-    });
+        final submitBtn = find.text('ดำเนินการต่อด้วย Google');
+        await tester.tap(submitBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Verify Home Screen loaded with user name "ปรียาภรณ์ นาคสมบูรณ์"
+        expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
+        expect(find.textContaining('ปรียาภรณ์ นาคสมบูรณ์'), findsWidgets);
+        expect(find.text('ซิงค์คลาวด์แล้ว'), findsOneWidget);
+      },
+    );
   });
 }

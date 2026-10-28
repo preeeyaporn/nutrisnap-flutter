@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 
 /// App color palette matching the NutriSnap Figma design specifications.
+/// Defines centralized color tokens for brand identity, neutral backgrounds,
+/// typography, macronutrient status chips, and utility states across the app.
 class AppColors {
   AppColors._();
 
-  // Primary Brand Colors
-  static const Color primary = Color(0xFF7C3AED); // Vibrant Purple / Violet
+  // --- Primary Brand Colors (Violet & Purple Accents) ---
+  /// Main vibrant brand primary color (#7C3AED)
+  static const Color primary = Color(0xFF7C3AED);
+
+  /// Dark shade of brand primary for focused elements and active states
   static const Color primaryDark = Color(0xFF5B21B6);
+
+  /// Lighter primary violet tint for highlight borders and badges
   static const Color primaryLight = Color(0xFFA78BFA);
+
+  /// Soft violet surface tint for chip background containers
   static const Color primarySoft = Color(0xFFEDE9FE);
+
+  /// Delicate lavender pastel for card backgrounds and modal containers
   static const Color primaryLavender = Color(0xFFF3E8FF);
 
   // Gradient definitions
