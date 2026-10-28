@@ -47,6 +47,9 @@ void main() {
       // Forgot password link
       expect(find.text('ลืมรหัสผ่าน?'), findsOneWidget);
 
+      // Google sign-in button
+      expect(find.text('เข้าสู่ระบบด้วย Google'), findsOneWidget);
+
       // Guest mode button
       expect(
         find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
@@ -106,6 +109,25 @@ void main() {
         final guestBtn = find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)');
         await tester.ensureVisible(guestBtn);
         await tester.tap(guestBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
+
+        // Should be on MainShellScreen with HomeScreen
+        expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
+        expect(find.text('สแกนบาร์โค้ดผลิตภัณฑ์'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping sign in with Google signs in and navigates to MainShellScreen',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final googleBtn = find.text('เข้าสู่ระบบด้วย Google');
+        await tester.ensureVisible(googleBtn);
+        await tester.tap(googleBtn);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
         await tester.pump(const Duration(milliseconds: 600));

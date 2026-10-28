@@ -143,5 +143,14 @@ void main() {
         expect(result.errorOrNull, contains('รหัสผ่านไม่ถูกต้อง'));
       },
     );
+
+    test('signInWithGoogle signs in with Google user', () async {
+      final result = await authService.signInWithGoogle();
+      expect(result.isSuccess, isTrue);
+      expect(authService.currentUser, isNotNull);
+      expect(authService.currentUser?.email, contains('gmail.com'));
+      expect(authService.currentUser?.displayName, contains('Google'));
+      expect(authService.currentUser?.isAnonymous, isFalse);
+    });
   });
 }

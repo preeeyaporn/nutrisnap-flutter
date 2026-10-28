@@ -40,6 +40,14 @@ void main() {
       expect(provider.currentUser?.email, 'test@nutri.com');
     });
 
+    test('signInWithGoogle logs in and updates state with Google account', () async {
+      final ok = await provider.signInWithGoogle();
+      expect(ok, isTrue);
+      expect(provider.isAuthenticated, isTrue);
+      expect(provider.currentUser?.displayName, contains('Google'));
+      expect(provider.currentUser?.isAnonymous, isFalse);
+    });
+
     test('signOut logs out user', () async {
       await provider.signInAsGuest();
       expect(provider.isAuthenticated, isTrue);

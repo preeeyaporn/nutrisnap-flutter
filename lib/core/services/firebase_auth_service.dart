@@ -19,6 +19,7 @@ abstract class FirebaseAuthService {
     String? displayName,
   });
   Future<Result<UserModel>> signInAnonymously();
+  Future<Result<UserModel>> signInWithGoogle();
   Future<Result<void>> signOut();
   Future<Result<UserModel>> updateProfile({
     String? displayName,
@@ -307,6 +308,28 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
     _currentUser = guest;
     _authStateController.add(_currentUser);
     return Result.success(guest);
+  }
+
+  @override
+  Future<Result<UserModel>> signInWithGoogle() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    const googleEmail = 'preeyaporn.nutrisnap@gmail.com';
+    final user = UserModel(
+      id: 'usr_google_preeyaporn',
+      email: googleEmail,
+      displayName: 'ปรียาภรณ์ (Google)',
+      photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
+      isAnonymous: false,
+      dailyCalorieTarget: 2000.0,
+      createdAt: DateTime.now(),
+    );
+
+    _registeredUsers[googleEmail] = user;
+    await _persistUser(user);
+
+    _currentUser = user;
+    _authStateController.add(_currentUser);
+    return Result.success(user);
   }
 
   @override

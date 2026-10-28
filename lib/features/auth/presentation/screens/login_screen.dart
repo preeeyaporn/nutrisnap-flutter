@@ -75,6 +75,57 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'เข้าสู่ระบบด้วย Google สำเร็จ ยินดีต้อนรับ ${authProvider.currentUser?.displayName ?? ""}',
+                  style: AppTypography.chipText.copyWith(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MainShellScreen()),
+        (route) => false,
+      );
+    } else {
+      final error =
+          authProvider.errorMessage ?? 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error,
+            style: AppTypography.chipText.copyWith(color: Colors.white),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _handleGuestLogin() async {
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signInAsGuest();
@@ -85,10 +136,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'เข้าสู่ระบบในโหมดผู้เยี่ยมชมเรียบร้อยแล้ว',
+            'เข้าสู่ระบบในโหมดผู้เยี่ยมชม (บันทึกข้อมูลเฉพาะในเครื่อง)',
             style: AppTypography.chipText.copyWith(color: Colors.white),
           ),
-          backgroundColor: AppColors.primary,
+          backgroundColor: const Color(0xFF64748B),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -437,14 +488,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 18),
 
-                  // Guest Mode Button
+                  // Google Sign-In Button
                   SizedBox(
                     height: 50,
                     child: OutlinedButton(
-                      onPressed: isLoading ? null : _handleGuestLogin,
+                      onPressed: isLoading ? null : _handleGoogleLogin,
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
+                        elevation: 1,
+                        shadowColor: Colors.black.withValues(alpha: 0.04),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
@@ -452,18 +505,52 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          _buildGoogleLogo(),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              'เข้าสู่ระบบด้วย Google',
+                              style: AppTypography.chipText.copyWith(
+                                color: const Color(0xFF1E293B),
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Guest Mode Button
+                  SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: isLoading ? null : _handleGuestLogin,
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF8FAFC),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           const Icon(
                             Icons.person_outline_rounded,
-                            color: Color(0xFF475569),
-                            size: 20,
+                            color: Color(0xFF64748B),
+                            size: 18,
                           ),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
                               'เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)',
                               style: AppTypography.chipText.copyWith(
-                                color: const Color(0xFF334155),
-                                fontSize: 13.5,
+                                color: const Color(0xFF64748B),
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -503,6 +590,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoogleLogo() {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Roboto',
+            foreground: Paint()
+              ..shader = const LinearGradient(
+                colors: [
+                  Color(0xFF4285F4), // Blue
+                  Color(0xFFEA4335), // Red
+                  Color(0xFFFBBC05), // Yellow
+                  Color(0xFF34A853), // Green
+                ],
+                stops: [0.0, 0.35, 0.7, 1.0],
+              ).createShader(const Rect.fromLTWH(0, 0, 22, 22)),
           ),
         ),
       ),

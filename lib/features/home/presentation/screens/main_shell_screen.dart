@@ -243,15 +243,24 @@ class _ProfileTab extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: user?.isAnonymous == true
                           ? const Color(0xFFF1F5F9)
-                          : AppColors.primaryLavender,
+                          : (user?.displayName.contains('Google') == true
+                              ? const Color(0xFFEFF6FF)
+                              : AppColors.primaryLavender),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      user?.isAnonymous == true ? 'GUEST' : 'PRO',
+                      user?.isAnonymous == true
+                          ? 'GUEST'
+                          : (user?.displayName.contains('Google') == true
+                              ? 'GOOGLE'
+                              : 'PRO'),
                       style: AppTypography.chipText.copyWith(
                         color: user?.isAnonymous == true
                             ? const Color(0xFF64748B)
-                            : AppColors.primary,
+                            : (user?.displayName.contains('Google') == true
+                                ? const Color(0xFF2563EB)
+                                : AppColors.primary),
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -291,6 +300,26 @@ class _ProfileTab extends StatelessWidget {
                       try {
                         authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
                       } catch (_) {}
+
+                      // Guest restriction: Guests cannot backup to cloud
+                      if (authUser?.isAnonymous == true) {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text('โหมดผู้เยี่ยมชมไม่รองรับ Cloud Sync กรุณาเข้าสู่ระบบด้วย Google หรืออีเมล'),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFFE11D48),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                        return;
+                      }
                       if (authUser != null) {
                         final effectiveId = (authUser.email != null && authUser.email!.contains('@'))
                             ? authUser.email!.trim()
@@ -328,7 +357,7 @@ class _ProfileTab extends StatelessWidget {
                       style: AppTypography.bodyMedium,
                     ),
                     subtitle: Text(
-                      'โมเดล: Gemini 1.5 Flash Vision (แตะเพื่อตั้งค่า Key)',
+                      'โมเดล: Gemini 1.5 Flash Vision (API Key: เข้ารหัสปลอดภัย 🔒)',
                       style: AppTypography.bodySmall,
                     ),
                     trailing: const Icon(
@@ -344,64 +373,103 @@ class _ProfileTab extends StatelessWidget {
                       showDialog(
                         context: context,
                         builder: (ctx) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            title: Row(
-                              children: [
-                                const Icon(
-                                  Icons.auto_awesome,
-                                  color: Color(0xFF7C3AED),
+                          bool obscureKey = true;
+                          return StatefulBuilder(
+                            builder: (ctx, setStateDialog) {
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'ตั้งค่า Gemini API Key',
-                                  style: AppTypography.heading3.copyWith(
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision จาก Google AI Studio:',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: const Color(0xFF475569),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: controller,
-                                  decoration: InputDecoration(
-                                    hintText: 'AIzaSy...',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.key_rounded,
+                                title: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.auto_awesome,
                                       color: Color(0xFF7C3AED),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'ตั้งค่า Gemini API Key',
+                                      style: AppTypography.heading3.copyWith(
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '* หากเว้นว่าง ระบบจะใช้โหมดจำลอง (Demo Mode) อัตโนมัติ',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontSize: 11,
-                                    color: const Color(0xFF94A3B8),
-                                  ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision จาก Google AI Studio:',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: const Color(0xFF475569),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextField(
+                                      controller: controller,
+                                      obscureText: obscureKey,
+                                      decoration: InputDecoration(
+                                        hintText: 'AIzaSy...',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        prefixIcon: const Icon(
+                                          Icons.key_rounded,
+                                          color: Color(0xFF7C3AED),
+                                        ),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            obscureKey
+                                                ? Icons.visibility_off_rounded
+                                                : Icons.visibility_rounded,
+                                            color: const Color(0xFF7C3AED),
+                                          ),
+                                          tooltip: obscureKey
+                                              ? 'แสดง API Key'
+                                              : 'ซ่อน API Key',
+                                          onPressed: () {
+                                            setStateDialog(() {
+                                              obscureKey = !obscureKey;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_rounded,
+                                          size: 13,
+                                          color: Color(0xFF16A34A),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'ซ่อน API Key อัตโนมัติเพื่อความปลอดภัย',
+                                          style: AppTypography.bodySmall.copyWith(
+                                            fontSize: 11,
+                                            color: const Color(0xFF16A34A),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '* หากเว้นว่าง ระบบจะใช้โหมดจำลอง (Demo Mode) อัตโนมัติ',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        fontSize: 11,
+                                        color: const Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(),
-                                child: const Text('ยกเลิก'),
-                              ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('ยกเลิก'),
+                                  ),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF7C3AED),
@@ -438,7 +506,9 @@ class _ProfileTab extends StatelessWidget {
                         },
                       );
                     },
-                  ),
+                  );
+                },
+              ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(

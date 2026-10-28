@@ -103,6 +103,28 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _authService.signInWithGoogle();
+    _isLoading = false;
+
+    return result.when(
+      success: (user) {
+        _currentUser = user;
+        notifyListeners();
+        return true;
+      },
+      failure: (message, exception) {
+        _errorMessage = message;
+        notifyListeners();
+        return false;
+      },
+    );
+  }
+
   Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
