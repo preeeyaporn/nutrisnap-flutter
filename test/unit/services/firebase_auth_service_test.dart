@@ -152,5 +152,17 @@ void main() {
       expect(authService.currentUser?.displayName, contains('ปรียาภรณ์ นาคสมบูรณ์'));
       expect(authService.currentUser?.isAnonymous, isFalse);
     });
+
+    test('signInWithGoogle with custom credentials sets user data', () async {
+      final result = await authService.signInWithGoogle(
+        customEmail: 'custom@google.com',
+        customDisplayName: 'Custom Google User',
+        customPhotoUrl: 'https://custom.photo/pic.jpg',
+      );
+      expect(result.isSuccess, isTrue);
+      expect(authService.currentUser?.email, 'custom@google.com');
+      expect(authService.currentUser?.displayName, 'Custom Google User');
+      expect(authService.currentUser?.photoUrl, 'https://custom.photo/pic.jpg');
+    });
   });
 }
