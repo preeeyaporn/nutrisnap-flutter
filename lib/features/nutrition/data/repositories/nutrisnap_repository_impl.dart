@@ -238,6 +238,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     required List<int> imageBytes,
     String mimeType = 'image/jpeg',
     String? userNotes,
+    String? imagePath,
   }) async {
     final aiResult = await _geminiService.analyzeFoodImage(
       imageBytes: imageBytes,
@@ -248,7 +249,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     return aiResult.when(
       success: (analysis) async {
         // Automatically create and persist FoodItem
-        final foodItem = analysis.toFoodItem();
+        final foodItem = analysis.toFoodItem(imageUrl: imagePath);
         await saveFoodItem(foodItem);
         return Result.success(analysis);
       },

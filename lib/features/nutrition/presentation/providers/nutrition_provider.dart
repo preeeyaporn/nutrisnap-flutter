@@ -13,6 +13,7 @@ class NutritionProvider extends ChangeNotifier {
   FoodItem? _currentProduct;
   NutritionAnalysisResult? _currentAiAnalysis;
   List<int>? _lastCapturedImageBytes;
+  String? _lastCapturedImagePath;
   ScanStatus _scanStatus = ScanStatus.idle;
   String? _errorMessage;
   bool _isLoading = false;
@@ -32,6 +33,7 @@ class NutritionProvider extends ChangeNotifier {
   FoodItem? get currentProduct => _currentProduct;
   NutritionAnalysisResult? get currentAiAnalysis => _currentAiAnalysis;
   List<int>? get lastCapturedImageBytes => _lastCapturedImageBytes;
+  String? get lastCapturedImagePath => _lastCapturedImagePath;
   ScanStatus get scanStatus => _scanStatus;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -405,23 +407,26 @@ class NutritionProvider extends ChangeNotifier {
     List<int> imageBytes, {
     String mimeType = 'image/jpeg',
     String? userNotes,
+    String? imagePath,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     _lastCapturedImageBytes = imageBytes;
+    _lastCapturedImagePath = imagePath;
     notifyListeners();
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: imageBytes,
       mimeType: mimeType,
       userNotes: userNotes,
+      imagePath: imagePath,
     );
 
     _isLoading = false;
     return result.when(
       success: (analysis) {
         _currentAiAnalysis = analysis;
-        _currentProduct = analysis.toFoodItem();
+        _currentProduct = analysis.toFoodItem(imageUrl: imagePath);
         loadRecentScans();
         notifyListeners();
         return true;
@@ -437,6 +442,7 @@ class NutritionProvider extends ChangeNotifier {
   Future<bool> recalculateWithFoodCorrection({
     required String correctedFoodName,
     List<int>? imageBytes,
+    String? imagePath,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -445,19 +451,21 @@ class NutritionProvider extends ChangeNotifier {
     final bytes = imageBytes ??
         _lastCapturedImageBytes ??
         List<int>.generate(100, (i) => i);
+    final path = imagePath ?? _lastCapturedImagePath;
     final prompt =
         'ผู้ใช้ระบุว่าอาหารในภาพนี้คือ "$correctedFoodName" (ไม่ใช่ที่ตรวจจับได้ก่อนหน้า) กรุณาวิเคราะห์ภาพร่วมกับชื่ออาหาร "$correctedFoodName" และคำนวณคุณค่าทางโภชนาการ สัดส่วน แคลอรี่ โปรตีน คาร์โบไฮเดรต ไขมัน น้ำตาล ใยอาหาร โซเดียม และส่วนผสมใหม่ทั้งหมดอย่างละเอียด';
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: bytes,
       userNotes: prompt,
+      imagePath: path,
     );
 
     _isLoading = false;
     return result.when(
       success: (analysis) {
         _currentAiAnalysis = analysis;
-        _currentProduct = analysis.toFoodItem();
+        _currentProduct = analysis.toFoodItem(imageUrl: path);
         loadRecentScans();
         notifyListeners();
         return true;
@@ -472,8 +480,10 @@ class NutritionProvider extends ChangeNotifier {
 
   Future<FoodItem> saveCurrentAiMeal({
     NutritionAnalysisResult? customAnalysis,
+    String? imageUrl,
   }) async {
     final analysis = customAnalysis ?? _currentAiAnalysis;
+    final path = imageUrl ?? _lastCapturedImagePath;
     final foodItem = (analysis ??
             NutritionAnalysisResult(
               foodName: 'ข้าวกะเพราไก่ไข่ดาว',
@@ -497,7 +507,7 @@ class NutritionProvider extends ChangeNotifier {
                   'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
               analyzedAt: DateTime.now(),
             ))
-        .toFoodItem();
+        .toFoodItem(imageUrl: path);
 
     await _repository.saveFoodItem(foodItem);
     _currentProduct = foodItem;

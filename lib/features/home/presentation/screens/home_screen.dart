@@ -7,6 +7,7 @@ import 'package:nutrisnap/features/camera/presentation/screens/ai_food_camera_sc
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
+import 'package:nutrisnap/features/nutrition/presentation/widgets/food_image_view.dart';
 import 'package:nutrisnap/features/scanner/presentation/screens/barcode_scanner_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -730,15 +731,12 @@ class HomeScreen extends StatelessWidget {
                     // Meal Image / Placeholder Icon
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Container(
+                      child: FoodImageView(
+                        item: item,
                         width: 58,
                         height: 58,
-                        color: Colors.white,
-                        child: Image.network(
-                          item.effectiveImageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _buildMealIcon(item),
-                        ),
+                        fit: BoxFit.cover,
+                        placeholder: _buildMealIcon(item),
                       ),
                     ),
                     const SizedBox(width: 14),

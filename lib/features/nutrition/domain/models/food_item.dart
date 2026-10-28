@@ -200,34 +200,71 @@ class FoodItem {
       return imageUrl!.trim();
     }
     final text = '$name $brand'.toLowerCase();
-    if (text.contains('ไก่') || text.contains('chicken') || text.contains('ปีกไก่')) {
-      return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300';
+    // 1. น้ำเปล่า / น้ำดื่มบริสุทธิ์
+    if (text.contains('น้ำเปล่า') ||
+        text.contains('น้ำดื่ม') ||
+        text.contains('น้ำแร่') ||
+        text.contains('water') ||
+        text.trim() == 'น้ำ') {
+      return 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=300';
     }
-    if (text.contains('มันฝรั่ง') ||
+    // 2. ขนมขบเคี้ยว / มันสำปะหลังทอดกรอบ / มันฝรั่ง / ซองขนม
+    if (text.contains('มันสำปะหลัง') ||
+        text.contains('มันฝรั่ง') ||
+        text.contains('ทอดกรอบ') ||
+        text.contains('แผ่น') ||
         text.contains('ขนม') ||
         text.contains('เลย์') ||
         text.contains('chip') ||
         text.contains('snack') ||
         text.contains('สาหร่าย') ||
-        text.contains('โนริ')) {
+        text.contains('โนริ') ||
+        text.contains('กรอบ') ||
+        text.contains('crisp')) {
       return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300';
     }
-    if (text.contains('น้ำ') ||
-        text.contains('นม') ||
-        text.contains('มะพร้าว') ||
+    // 3. ไก่ / ไก่ทอด / ปีกไก่
+    if (text.contains('ไก่') ||
+        text.contains('chicken') ||
+        text.contains('ปีกไก่') ||
+        text.contains('เป็ด')) {
+      return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300';
+    }
+    // 4. กาแฟ / ชา
+    if (text.contains('กาแฟ') ||
+        text.contains('coffee') ||
         text.contains('ชา') ||
-        text.contains('โค้ก') ||
-        text.contains('beverage')) {
+        text.contains('tea') ||
+        text.contains('ลาเต้')) {
       return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300';
     }
-    if (text.contains('กะเพรา') || text.contains('ข้าว') || text.contains('ผัด')) {
+    // 5. นม / โยเกิร์ต
+    if (text.contains('นม') ||
+        text.contains('milk') ||
+        text.contains('โยเกิร์ต') ||
+        text.contains('yogurt')) {
+      return 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=300';
+    }
+    // 6. เครื่องดื่มอื่นๆ / น้ำผลไม้ / น้ำอัดลม
+    if (text.contains('น้ำ') ||
+        text.contains('โค้ก') ||
+        text.contains('มะพร้าว') ||
+        text.contains('beverage') ||
+        text.contains('juice')) {
+      return 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=300';
+    }
+    // 7. ข้าว / อาหารจานเดียว / ผัด / กะเพรา
+    if (text.contains('กะเพรา') ||
+        text.contains('ข้าว') ||
+        text.contains('ผัด') ||
+        text.contains('เส้น') ||
+        text.contains('ก๋วยเตี๋ยว') ||
+        text.contains('มาม่า')) {
       return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300';
     }
-    if (text.contains('สลัด')) {
+    // 8. สลัด / ผัก
+    if (text.contains('สลัด') || text.contains('salad') || text.contains('ผัก')) {
       return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
-    }
-    if (text.contains('โยเกิร์ต')) {
-      return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300';
     }
     return 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=300';
   }

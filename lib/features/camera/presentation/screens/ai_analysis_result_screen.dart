@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,11 +13,13 @@ import 'package:nutrisnap/features/nutrition/presentation/screens/meal_detail_sc
 class AiAnalysisResultScreen extends StatefulWidget {
   final NutritionAnalysisResult analysis;
   final List<int>? imageBytes;
+  final String? imagePath;
 
   const AiAnalysisResultScreen({
     super.key,
     required this.analysis,
     this.imageBytes,
+    this.imagePath,
   });
 
   @override
@@ -101,6 +104,7 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
     final provider = context.read<NutritionProvider>();
     final foodItem = await provider.saveCurrentAiMeal(
       customAnalysis: _currentAnalysis,
+      imageUrl: widget.imagePath,
     );
 
     if (!mounted) return;
@@ -616,6 +620,17 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
   }
 
   Widget _buildImageWidget() {
+    if (widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+      try {
+        final file = File(widget.imagePath!);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            fit: BoxFit.cover,
+          );
+        }
+      } catch (_) {}
+    }
     if (widget.imageBytes != null && widget.imageBytes!.length > 200) {
       try {
         return Image.memory(

@@ -8,6 +8,7 @@ import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_pr
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
+import 'package:nutrisnap/features/nutrition/presentation/widgets/food_image_view.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -700,13 +701,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     width: 60,
                     height: 60,
                     color: const Color(0xFFF1F5F9),
-                    child: Image.network(
-                      item.effectiveImageUrl,
+                    child: FoodImageView(
+                      item: item,
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
+                      placeholder: const Center(
+                        child: Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
+                      ),
                     ),
                   ),
                 ),

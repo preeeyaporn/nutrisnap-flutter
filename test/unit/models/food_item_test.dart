@@ -154,5 +154,46 @@ void main() {
       expect(barcodeFood.isBarcode, isTrue);
       expect(barcodeFood.effectiveImageUrl, contains('unsplash.com'));
     });
+
+    test('effectiveImageUrl semantic matching maps water and cassava chips to accurate photos', () {
+      final waterItem = FoodItem(
+        id: 'water_1',
+        name: 'น้ำเปล่า',
+        calories: 0,
+        protein: 0,
+        carbohydrates: 0,
+        fat: 0,
+        source: 'ai_vision',
+        scannedAt: now,
+      );
+      // Plain water must NOT show coffee, must show fresh drinking water
+      expect(waterItem.effectiveImageUrl, contains('photo-1548839140-29a749e1bc4e'));
+
+      final cassavaChips = FoodItem(
+        id: 'snack_1',
+        name: 'มันสำปะหลังแผ่นทอดกรอบ รสเกลือ',
+        calories: 270,
+        protein: 1,
+        carbohydrates: 35,
+        fat: 14,
+        source: 'ai_vision',
+        scannedAt: now,
+      );
+      // Cassava chips must NOT show salad, must show crispy snack/chips
+      expect(cassavaChips.effectiveImageUrl, contains('photo-1566478989037-eec170784d0b'));
+
+      final realPhotoItem = FoodItem(
+        id: 'real_photo_1',
+        name: 'ปีกไก่ทอด',
+        calories: 650,
+        protein: 30,
+        carbohydrates: 10,
+        fat: 40,
+        imageUrl: '/data/user/0/com.example.nutrisnap/cache/CAP_real_photo.jpg',
+        source: 'ai_vision',
+        scannedAt: now,
+      );
+      expect(realPhotoItem.effectiveImageUrl, equals('/data/user/0/com.example.nutrisnap/cache/CAP_real_photo.jpg'));
+    });
   });
 }

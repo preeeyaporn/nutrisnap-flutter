@@ -212,7 +212,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
       if (pickedFile == null) return;
       final bytes = await pickedFile.readAsBytes();
-      await provider.analyzeFoodImage(bytes, mimeType: 'image/jpeg');
+      final imagePath = pickedFile.path;
+      await provider.analyzeFoodImage(
+        bytes,
+        mimeType: 'image/jpeg',
+        imagePath: imagePath,
+      );
 
       if (!mounted) return;
       if (provider.currentAiAnalysis != null) {
@@ -221,6 +226,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
             builder: (context) => AiAnalysisResultScreen(
               analysis: provider.currentAiAnalysis!,
               imageBytes: bytes,
+              imagePath: imagePath,
             ),
           ),
         );
@@ -250,10 +256,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     if (provider.isLoading) return;
 
     List<int>? imageBytes;
+    String? imagePath;
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final xfile = await _cameraController!.takePicture();
         imageBytes = await xfile.readAsBytes();
+        imagePath = xfile.path;
       } catch (e) {
         debugPrint('Error taking picture with camera: $e');
       }
@@ -261,7 +269,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
 
     // High quality bytes for multimodal analysis
     imageBytes ??= List<int>.generate(100, (i) => i);
-    await provider.analyzeFoodImage(imageBytes);
+    await provider.analyzeFoodImage(imageBytes, imagePath: imagePath);
 
     if (!mounted) return;
     if (provider.currentAiAnalysis != null) {
@@ -270,6 +278,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
           builder: (context) => AiAnalysisResultScreen(
             analysis: provider.currentAiAnalysis!,
             imageBytes: imageBytes,
+            imagePath: imagePath,
           ),
         ),
       );
