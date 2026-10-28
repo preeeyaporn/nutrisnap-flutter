@@ -44,7 +44,8 @@ void main() {
       final ok = await provider.signInWithGoogle();
       expect(ok, isTrue);
       expect(provider.isAuthenticated, isTrue);
-      expect(provider.currentUser?.displayName, contains('Google'));
+      expect(provider.currentUser?.displayName, contains('ปรียาภรณ์'));
+      expect(provider.currentUser?.email, 'preeyapornnr@gmail.com');
       expect(provider.currentUser?.isAnonymous, isFalse);
     });
 

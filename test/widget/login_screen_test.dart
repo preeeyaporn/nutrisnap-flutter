@@ -34,18 +34,14 @@ void main() {
 
       // Brand headers
       expect(find.text('ยินดีต้อนรับกลับสู่ NutriSnap'), findsOneWidget);
-      expect(find.text('เข้าสู่ระบบ'), findsWidgets); // App bar title & button
       expect(
         find.text('เข้าสู่ระบบเพื่อติดตามโภชนาการและสุขภาพของคุณ'),
         findsOneWidget,
       );
 
-      // Form input fields
-      expect(find.text('อีเมลของคุณ'), findsOneWidget);
-      expect(find.text('รหัสผ่าน'), findsOneWidget);
-
-      // Forgot password link
-      expect(find.text('ลืมรหัสผ่าน?'), findsOneWidget);
+      // Google Account profile badge
+      expect(find.text('ปรียาภรณ์ นาคสมบูรณ์'), findsOneWidget);
+      expect(find.text('preeyapornnr@gmail.com'), findsOneWidget);
 
       // Google sign-in button
       expect(find.text('เข้าสู่ระบบด้วย Google'), findsOneWidget);
@@ -55,49 +51,6 @@ void main() {
         find.text('เข้าใช้งานแบบผู้เยี่ยมชม (Guest Mode)'),
         findsOneWidget,
       );
-
-      // Register link
-      expect(find.text('ยังไม่มีบัญชีใช่หรือไม่?'), findsOneWidget);
-      expect(find.text('สมัครสมาชิกทันที'), findsOneWidget);
-    });
-
-    testWidgets('shows validation error when fields are empty', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // Clear the default demo text fields
-      final textFields = find.byType(TextFormField);
-      await tester.enterText(textFields.at(0), '');
-      await tester.enterText(textFields.at(1), '');
-      await tester.pumpAndSettle();
-
-      // Tap login button
-      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-      await tester.ensureVisible(loginBtn);
-      await tester.tap(loginBtn);
-      await tester.pumpAndSettle();
-
-      // Validation errors should appear
-      expect(find.text('กรุณากรอกอีเมล'), findsOneWidget);
-      expect(find.text('กรุณากรอกรหัสผ่าน'), findsOneWidget);
-    });
-
-    testWidgets('shows validation error for invalid email format', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final textFields = find.byType(TextFormField);
-      await tester.enterText(textFields.at(0), 'invalid-email');
-      await tester.pumpAndSettle();
-
-      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-      await tester.ensureVisible(loginBtn);
-      await tester.tap(loginBtn);
-      await tester.pumpAndSettle();
-
-      expect(find.text('รูปแบบอีเมลไม่ถูกต้อง'), findsOneWidget);
     });
 
     testWidgets(
@@ -137,81 +90,5 @@ void main() {
         expect(find.text('สแกนบาร์โค้ดผลิตภัณฑ์'), findsOneWidget);
       },
     );
-
-    testWidgets(
-      'tapping sign in with valid credentials navigates to MainShellScreen',
-      (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-        await tester.ensureVisible(loginBtn);
-        await tester.tap(loginBtn);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 600));
-        await tester.pump(const Duration(milliseconds: 600));
-
-        // Navigates to main screen with HomeScreen
-        expect(find.text('มื้ออาหารที่บันทึกวันนี้'), findsOneWidget);
-        expect(find.text('สแกนบาร์โค้ดผลิตภัณฑ์'), findsOneWidget);
-      },
-    );
-
-    testWidgets('navigates to RegisterScreen when tapping register link', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final registerLink = find.text('สมัครสมาชิกทันที');
-      await tester.ensureVisible(registerLink);
-      await tester.tap(registerLink);
-      await tester.pumpAndSettle();
-
-      // Should be on RegisterScreen
-      expect(find.text('สร้างบัญชีใหม่'), findsOneWidget);
-      expect(find.text('ยืนยันรหัสผ่านอีกครั้ง'), findsOneWidget);
-      expect(find.text('เป้าหมายด้านสุขภาพของคุณ'), findsOneWidget);
-    });
-
-    testWidgets('shows error snackbar when account is not registered', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final textFields = find.byType(TextFormField);
-      await tester.enterText(textFields.at(0), 'unknown@test.com');
-      await tester.enterText(textFields.at(1), 'password123');
-      await tester.pumpAndSettle();
-
-      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-      await tester.ensureVisible(loginBtn);
-      await tester.tap(loginBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-
-      expect(find.textContaining('ไม่พบบัญชีผู้ใช้นี้ในระบบ'), findsOneWidget);
-    });
-
-    testWidgets('shows error snackbar when password is incorrect', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final textFields = find.byType(TextFormField);
-      await tester.enterText(textFields.at(0), 'user@nutrisnap.com');
-      await tester.enterText(textFields.at(1), 'wrongpassword999');
-      await tester.pumpAndSettle();
-
-      final loginBtn = find.widgetWithText(ElevatedButton, 'เข้าสู่ระบบ');
-      await tester.ensureVisible(loginBtn);
-      await tester.tap(loginBtn);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-
-      expect(find.textContaining('รหัสผ่านไม่ถูกต้อง'), findsOneWidget);
-    });
   });
 }

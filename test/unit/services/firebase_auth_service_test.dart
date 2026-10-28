@@ -148,8 +148,8 @@ void main() {
       final result = await authService.signInWithGoogle();
       expect(result.isSuccess, isTrue);
       expect(authService.currentUser, isNotNull);
-      expect(authService.currentUser?.email, contains('gmail.com'));
-      expect(authService.currentUser?.displayName, contains('Google'));
+      expect(authService.currentUser?.email, 'preeyapornnr@gmail.com');
+      expect(authService.currentUser?.displayName, contains('ปรียาภรณ์ นาคสมบูรณ์'));
       expect(authService.currentUser?.isAnonymous, isFalse);
     });
   });

@@ -3,6 +3,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
+import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
@@ -46,9 +48,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       CurvedAnimation(parent: _laserController, curve: Curves.easeInOut),
     );
 
-    // Trigger initial scan for demo product
+    // Trigger initial scan for demo product only for logged-in users
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NutritionProvider>().scanBarcode(_currentBarcode);
+      final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+      if (authUser?.isAnonymous != true) {
+        context.read<NutritionProvider>().scanBarcode(_currentBarcode);
+      }
     });
   }
 
@@ -61,6 +66,51 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
     super.dispose();
   }
 
+  void _showGuestLockedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.lock_rounded, color: Color(0xFFE11D48)),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'เฉพาะสมาชิกเท่านั้น',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: const Text('โหมดผู้เยี่ยมชมไม่สามารถสแกนบาร์โค้ดได้ กรุณาเข้าสู่ระบบด้วย Google เพื่อเริ่มใช้งาน'),
+        actionsOverflowButtonSpacing: 8,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('ปิด'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('เข้าสู่ระบบด้วย Google'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _toggleFlash() {
     setState(() => _isFlashOn = !_isFlashOn);
     try {
@@ -69,6 +119,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   }
 
   void _onDetectBarcode(BarcodeCapture capture) {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
     for (final barcode in capture.barcodes) {
       final code = barcode.rawValue;
       if (code != null && code.isNotEmpty && code != _currentBarcode) {
@@ -80,6 +135,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   }
 
   void _showManualBarcodeDialog() {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
+
     final controller = TextEditingController(text: _currentBarcode);
     showDialog(
       context: context,
@@ -781,6 +842,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       ),
                       child: ElevatedButton(
                         onPressed: () {
+                          final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+                          if (authUser?.isAnonymous == true) {
+                            _showGuestLockedDialog();
+                            return;
+                          }
+
                           if (nutritionProvider.scanStatus == ScanStatus.scanning) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('กำลังค้นหาข้อมูลสินค้า กรุณารอสักครู่...')),

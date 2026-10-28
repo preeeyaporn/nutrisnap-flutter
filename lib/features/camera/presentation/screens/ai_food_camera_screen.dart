@@ -6,7 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
-import 'package:nutrisnap/core/services/gemini_service.dart';
+import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
+import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/camera/presentation/screens/ai_analysis_result_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
@@ -198,6 +199,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   }
 
   Future<void> _pickFromGalleryAndAnalyze() async {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
+
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
 
@@ -246,6 +253,12 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
   }
 
   Future<void> _captureAndAnalyze() async {
+    final authUser = Provider.of<AuthProvider?>(context, listen: false)?.currentUser;
+    if (authUser?.isAnonymous == true) {
+      _showGuestLockedDialog();
+      return;
+    }
+
     final provider = context.read<NutritionProvider>();
     if (provider.isLoading) return;
 
@@ -283,132 +296,57 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
     }
   }
 
-  void _showGeminiApiKeyDialog() async {
-    final savedKey = await GeminiServiceImpl.getSavedApiKey() ?? '';
-    final controller = TextEditingController(text: savedKey);
-
-    if (!mounted) return;
+  void _showGuestLockedDialog() {
     showDialog(
       context: context,
-      builder: (ctx) {
-        bool obscureKey = true;
-        return StatefulBuilder(
-          builder: (ctx, setStateDialog) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.lock_rounded, color: Color(0xFFE11D48)),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'เฉพาะสมาชิกเท่านั้น',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
               ),
-              title: Row(
-                children: [
-                  const Icon(Icons.auto_awesome, color: Color(0xFF7C3AED)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'ตั้งค่า Gemini API Key',
-                    style: AppTypography.heading3.copyWith(fontSize: 16),
-                  ),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ใส่ API Key เพื่อเชื่อมต่อ Gemini 1.5 Flash Vision วิเคราะห์ภาพอาหารจริงจาก Google AI Studio:',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: const Color(0xFF475569),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: controller,
-                    obscureText: obscureKey,
-                    decoration: InputDecoration(
-                      hintText: 'AIzaSy...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.key_rounded,
-                        color: Color(0xFF7C3AED),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureKey
-                              ? Icons.visibility_off_rounded
-                              : Icons.visibility_rounded,
-                          color: const Color(0xFF7C3AED),
-                        ),
-                        tooltip: obscureKey ? 'แสดง API Key' : 'ซ่อน API Key',
-                        onPressed: () {
-                          setStateDialog(() {
-                            obscureKey = !obscureKey;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.lock_rounded,
-                        size: 13,
-                        color: Color(0xFF16A34A),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ซ่อน API Key อัตโนมัติเพื่อความปลอดภัย',
-                        style: AppTypography.bodySmall.copyWith(
-                          fontSize: 11,
-                          color: const Color(0xFF16A34A),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '* หากไม่ระบุ ระบบจะใช้โหมดจำลองความแม่นยำสูง (Demo Fallback)',
-                    style: AppTypography.bodySmall.copyWith(
-                      fontSize: 11,
-                      color: const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('ยกเลิก'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7C3AED),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    final key = controller.text.trim();
-                    await GeminiServiceImpl.saveApiKey(key);
-                    if (!ctx.mounted) return;
-                    Navigator.of(ctx).pop();
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          key.isNotEmpty
-                              ? 'บันทึก Gemini API Key เรียบร้อยแล้ว'
-                              : 'ตั้งค่าเป็นโหมดจำลอง (Demo Mode)',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text('บันทึก'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ),
+          ],
+        ),
+        content: const Text('โหมดผู้เยี่ยมชมไม่สามารถใช้ AI วิเคราะห์ภาพอาหารได้ กรุณาเข้าสู่ระบบด้วย Google เพื่อเริ่มใช้งาน'),
+        actionsOverflowButtonSpacing: 8,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('ปิด'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('เข้าสู่ระบบด้วย Google'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGeminiApiKeyNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔒 Gemini API Key ถูกล็อคและเข้ารหัสถาวรในระบบ ไม่อนุญาตให้เปิดเผยหรือแก้ไข'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 
@@ -441,7 +379,7 @@ class _AiFoodCameraScreenState extends State<AiFoodCameraScreen>
                   Expanded(
                     child: Center(
                       child: GestureDetector(
-                        onTap: _showGeminiApiKeyDialog,
+                        onTap: _showGeminiApiKeyNotice,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,

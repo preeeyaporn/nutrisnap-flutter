@@ -313,11 +313,11 @@ class FirebaseAuthServiceImpl implements FirebaseAuthService {
   @override
   Future<Result<UserModel>> signInWithGoogle() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    const googleEmail = 'preeyaporn.nutrisnap@gmail.com';
+    const googleEmail = 'preeyapornnr@gmail.com';
     final user = UserModel(
-      id: 'usr_google_preeyaporn',
+      id: 'usr_google_preeyapornnr',
       email: googleEmail,
-      displayName: 'ปรียาภรณ์ (Google)',
+      displayName: 'ปรียาภรณ์ นาคสมบูรณ์',
       photoUrl: 'https://lh3.googleusercontent.com/a/default-user',
       isAnonymous: false,
       dailyCalorieTarget: 2000.0,
