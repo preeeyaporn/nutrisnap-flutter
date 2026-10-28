@@ -9,8 +9,6 @@ import 'package:nutrisnap/features/auth/presentation/screens/login_screen.dart';
 import 'package:nutrisnap/features/history/presentation/screens/history_screen.dart';
 import 'package:nutrisnap/features/home/presentation/screens/home_screen.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/meal_detail_screen.dart';
-import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
 import 'package:nutrisnap/features/sync/presentation/screens/sync_offline_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
