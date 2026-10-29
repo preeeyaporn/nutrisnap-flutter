@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _calorieController = TextEditingController(text: '2000');
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -36,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _calorieController.dispose();
     super.dispose();
   }
 
@@ -73,14 +75,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!mounted) return;
 
     if (success) {
-      double targetCalories = 2000.0;
-      if (_selectedGoal == 'ลดน้ำหนัก') {
-        targetCalories = 1800.0;
-      } else if (_selectedGoal == 'เพิ่มกล้ามเนื้อ') {
-        targetCalories = 2500.0;
-      } else if (_selectedGoal == 'ควบคุมน้ำตาล') {
-        targetCalories = 1900.0;
-      }
+      final inputCal = double.tryParse(_calorieController.text.trim());
+      double targetCalories = (inputCal != null && inputCal >= 500 && inputCal <= 6000)
+          ? inputCal
+          : 2000.0;
       await authProvider.updateDailyCalorieTarget(targetCalories);
 
       if (!mounted) return;
@@ -512,7 +510,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               selected: isSelected,
                               onSelected: (selected) {
                                 if (selected) {
-                                  setState(() => _selectedGoal = goal);
+                                  setState(() {
+                                    _selectedGoal = goal;
+                                    if (goal == 'ลดน้ำหนัก') {
+                                      _calorieController.text = '1800';
+                                    } else if (goal == 'เพิ่มกล้ามเนื้อ') {
+                                      _calorieController.text = '2500';
+                                    } else if (goal == 'ควบคุมน้ำตาล') {
+                                      _calorieController.text = '1900';
+                                    } else {
+                                      _calorieController.text = '2000';
+                                    }
+                                  });
                                 }
                               },
                               labelStyle: AppTypography.chipText.copyWith(
@@ -535,6 +544,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             );
                           }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Custom Calorie Target Input
+                        Text(
+                          'เป้าหมายแคลอรีต่อวัน (ปรับเปลี่ยนได้ตามต้องการ)',
+                          style: AppTypography.heading3.copyWith(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF334155),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _calorieController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'เช่น 1800, 2000, 2200',
+                            suffixText: 'kcal / วัน',
+                            prefixIcon: const Icon(
+                              Icons.local_fire_department_rounded,
+                              color: Color(0xFFEF4444),
+                              size: 20,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.8,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 24),
 
