@@ -2,9 +2,9 @@ name: Flutter CI/CD & Automated Test Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, 'Thanut-orn/**', 'feature/**', 'Kunakorn/**', 'Natjama/**', 'Preeyaporn/**' ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, develop ]
 
 jobs:
   lint_and_test:
