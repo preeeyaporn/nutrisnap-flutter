@@ -306,10 +306,13 @@ class NutriSnapRepositoryImpl implements FoodRepository {
             if (cloudRepository != null) {
               cloudRepository!.deleteFoodItem(item.id).ignore();
             }
-          } else if (_currentUserId != null &&
-              item.userId != null &&
-              item.userId != _currentUserId) {
-            continue;
+          } else if (_currentUserId != null) {
+            if (item.userId == null) {
+              // ลบรายการแคชเก่าที่ตกค้างจากการทดสอบก่อนหน้าออกจากเครื่องอัตโนมัติ
+              await _localRepository.deleteFoodItem(item.id);
+            } else if (item.userId == _currentUserId) {
+              realItems.add(item);
+            }
           } else {
             realItems.add(item);
           }
@@ -322,26 +325,9 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
   @override
   Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async {
-    final res = await _localRepository.getRecentScans(limit: limit);
-    return res.when(
-      success: (items) async {
-        final realItems = <FoodItem>[];
-        for (final item in items) {
-          if (item.id.startsWith('demo_')) {
-            await _localRepository.deleteFoodItem(item.id);
-            if (cloudRepository != null) {
-              cloudRepository!.deleteFoodItem(item.id).ignore();
-            }
-          } else if (_currentUserId != null &&
-              item.userId != null &&
-              item.userId != _currentUserId) {
-            continue;
-          } else {
-            realItems.add(item);
-          }
-        }
-        return Result.success(await _syncVerifiedCatalogItems(realItems));
-      },
+    final allRes = await getAllFoodItems();
+    return allRes.when(
+      success: (items) => Result.success(items.take(limit).toList()),
       failure: (msg, ex) => Result.failure(msg, ex),
     );
   }
@@ -388,10 +374,12 @@ class NutriSnapRepositoryImpl implements FoodRepository {
       if (item.id.startsWith('demo_')) {
         await _localRepository.deleteFoodItem(item.id);
         cloud.deleteFoodItem(item.id).ignore();
-      } else if (_currentUserId != null &&
-          item.userId != null &&
-          item.userId != _currentUserId) {
-        continue;
+      } else if (_currentUserId != null) {
+        if (item.userId == null) {
+          await _localRepository.deleteFoodItem(item.id);
+        } else if (item.userId == _currentUserId) {
+          realItems.add(item);
+        }
       } else {
         realItems.add(item);
       }

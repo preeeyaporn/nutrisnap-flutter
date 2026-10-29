@@ -4,6 +4,7 @@ import 'package:nutrisnap/core/constants/app_colors.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nutrisnap/features/home/presentation/screens/main_shell_screen.dart';
+import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -80,6 +81,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? inputCal
           : 2000.0;
       await authProvider.updateDailyCalorieTarget(targetCalories);
+      if (!mounted) return;
+      try {
+        final nutritionProvider = context.read<NutritionProvider>();
+        await nutritionProvider.clearUserData(clearLocalDb: true);
+      } catch (_) {}
 
       if (!mounted) return;
 
