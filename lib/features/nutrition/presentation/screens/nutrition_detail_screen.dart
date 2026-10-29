@@ -334,6 +334,54 @@ class _NutritionDetailScreenState extends State<NutritionDetailScreen> {
     );
   }
 
+  void _showDeleteDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_sweep_outlined, color: Color(0xFFEF4444), size: 24),
+            SizedBox(width: 8),
+            Text('ลบรายการอาหาร', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'คุณต้องการลบ "${_currentItem.name}" ออกจากสมุดบันทึกอาหารใช่หรือไม่?',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final provider = context.read<NutritionProvider>();
+              await provider.deleteFoodItem(_currentItem.id);
+              if (!mounted) return;
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('ลบ "${_currentItem.name}" เรียบร้อยแล้ว'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+            },
+            child: const Text('ลบรายการ'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 2. ฟังก์ชันแก้ไขข้อมูลโภชนาการด้วยตนเองครบทุกช่อง (User Manual Override / Edit Food Details)
   Future<void> _showEditNutritionBottomSheet() async {
     final weightCtrl = TextEditingController(
@@ -878,6 +926,11 @@ class _NutritionDetailScreenState extends State<NutritionDetailScreen> {
               tooltip: 'รีเฟรชข้อมูลจาก Open Food Facts',
               onPressed: _isRefreshing ? null : _refreshFromOpenFoodFacts,
             ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+            tooltip: 'ลบรายการอาหาร',
+            onPressed: _showDeleteDialog,
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 14),
             child: Container(

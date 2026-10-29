@@ -810,14 +810,73 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Right time text if available
-                    Text(
-                      _getRelativeTimeString(item.scannedAt),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: const Color(0xFF94A3B8),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    // Right side: relative time + quick delete button
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _getRelativeTimeString(item.scannedAt),
+                          style: AppTypography.bodySmall.copyWith(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 18,
+                          ),
+                          tooltip: 'ลบรายการ',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                title: Row(
+                                  children: const [
+                                    Icon(Icons.delete_sweep_outlined, color: Color(0xFFEF4444), size: 24),
+                                    SizedBox(width: 8),
+                                    Text('ลบรายการอาหาร', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                content: Text('คุณต้องการลบ "${item.name}" ออกจากประวัติใช่หรือไม่?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFEF4444),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: const Text('ลบรายการ'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              await context.read<NutritionProvider>().deleteFoodItem(item.id);
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('ลบ "${item.name}" เรียบร้อยแล้ว'),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
