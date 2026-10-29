@@ -289,8 +289,20 @@ class NutriSnapRepositoryImpl implements FoodRepository {
   Future<Result<List<FoodItem>>> getAllFoodItems() async {
     final res = await _localRepository.getAllFoodItems();
     return res.when(
-      success: (items) async =>
-          Result.success(await _syncVerifiedCatalogItems(items)),
+      success: (items) async {
+        final realItems = <FoodItem>[];
+        for (final item in items) {
+          if (item.id.startsWith('demo_')) {
+            await _localRepository.deleteFoodItem(item.id);
+            if (cloudRepository != null) {
+              cloudRepository!.deleteFoodItem(item.id).ignore();
+            }
+          } else {
+            realItems.add(item);
+          }
+        }
+        return Result.success(await _syncVerifiedCatalogItems(realItems));
+      },
       failure: (msg, ex) => Result.failure(msg, ex),
     );
   }
@@ -299,8 +311,20 @@ class NutriSnapRepositoryImpl implements FoodRepository {
   Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async {
     final res = await _localRepository.getRecentScans(limit: limit);
     return res.when(
-      success: (items) async =>
-          Result.success(await _syncVerifiedCatalogItems(items)),
+      success: (items) async {
+        final realItems = <FoodItem>[];
+        for (final item in items) {
+          if (item.id.startsWith('demo_')) {
+            await _localRepository.deleteFoodItem(item.id);
+            if (cloudRepository != null) {
+              cloudRepository!.deleteFoodItem(item.id).ignore();
+            }
+          } else {
+            realItems.add(item);
+          }
+        }
+        return Result.success(await _syncVerifiedCatalogItems(realItems));
+      },
       failure: (msg, ex) => Result.failure(msg, ex),
     );
   }
@@ -340,77 +364,25 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     }
 
     final localItemsResult = await _localRepository.getAllFoodItems();
-    var items = localItemsResult.dataOrNull ?? [];
+    final items = localItemsResult.dataOrNull ?? [];
 
-    if (items.isEmpty) {
-      final initialDemos = [
-        FoodItem(
-          id: 'demo_1',
-          name: 'ข้าวกะเพราไก่ไข่ดาว',
-          calories: 560,
-          protein: 26,
-          carbohydrates: 65,
-          fat: 20,
-          nutriScore: 'B',
-          imageUrl:
-              'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
-          scannedAt: DateTime.now(),
-          source: 'ai_vision',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_2',
-          name: 'ข้าวโอ๊ตออร์แกนิก เนเชอร์สพอยท์',
-          calories: 190,
-          protein: 6,
-          carbohydrates: 32,
-          fat: 4,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
-          source: 'barcode_scan',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_3',
-          name: 'โยเกิร์ตกรีกพร้อมเบอร์รีรวม',
-          calories: 180,
-          protein: 12,
-          carbohydrates: 20,
-          fat: 5,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(days: 1)),
-          source: 'barcode_scan',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_4',
-          name: 'ชามสลัดแซลมอนย่าง',
-          calories: 520,
-          protein: 34,
-          carbohydrates: 28,
-          fat: 22,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
-          source: 'ai_vision',
-          isSynced: false,
-        ),
-      ];
-
-      for (final demo in initialDemos) {
-        await _localRepository.saveFoodItem(demo);
+    final realItems = <FoodItem>[];
+    for (final item in items) {
+      if (item.id.startsWith('demo_')) {
+        await _localRepository.deleteFoodItem(item.id);
+        cloud.deleteFoodItem(item.id).ignore();
+      } else {
+        realItems.add(item);
       }
-      items = initialDemos;
     }
 
-    final syncResult = await cloud.syncBatch(items);
+    if (realItems.isEmpty) {
+      return const Result.success(0);
+    }
+
+    final syncResult = await cloud.syncBatch(realItems);
     if (syncResult.isSuccess && _localRepository is HiveFoodRepository) {
-      await _localRepository.markAsSynced(items.map((i) => i.id).toList());
+      await _localRepository.markAsSynced(realItems.map((i) => i.id).toList());
     }
     return syncResult;
   }

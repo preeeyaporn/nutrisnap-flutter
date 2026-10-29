@@ -125,31 +125,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       body: Consumer<NutritionProvider>(
         builder: (context, provider, child) {
-          final hasRealData = provider.recentScans.isNotEmpty;
-          final isDemo = !hasRealData;
-
           // สรุปจำนวนมื้อและแคลอรี่รวมของวันนั้น โดยแยกตามที่มา
-          final allCount = isDemo ? 4 : provider.getMealCountForDate(_selectedDate);
-          final barcodeCount = isDemo ? 2 : provider.getMealCountForDate(_selectedDate, source: 'barcode_scan');
-          final aiCount = isDemo ? 2 : provider.getMealCountForDate(_selectedDate, source: 'ai_vision');
+          final allCount = provider.getMealCountForDate(_selectedDate);
+          final barcodeCount = provider.getMealCountForDate(_selectedDate, source: 'barcode_scan');
+          final aiCount = provider.getMealCountForDate(_selectedDate, source: 'ai_vision');
 
-          final allCalories = isDemo ? 1760 : provider.getTotalCaloriesForDate(_selectedDate).toInt();
-          final barcodeCalories = isDemo ? 370 : provider.getTotalCaloriesForDate(_selectedDate, source: 'barcode_scan').toInt();
-          final aiCalories = isDemo ? 1080 : provider.getTotalCaloriesForDate(_selectedDate, source: 'ai_vision').toInt();
+          final allCalories = provider.getTotalCaloriesForDate(_selectedDate).toInt();
+          final barcodeCalories = provider.getTotalCaloriesForDate(_selectedDate, source: 'barcode_scan').toInt();
+          final aiCalories = provider.getTotalCaloriesForDate(_selectedDate, source: 'ai_vision').toInt();
 
-          final items = isDemo ? <FoodItem>[] : provider.getFilteredScansForDate(_selectedDate);
+          final items = provider.getFilteredScansForDate(_selectedDate);
 
-          final currentDisplayCount = isDemo
-              ? (provider.selectedFilter == 'barcode_scan' || provider.selectedFilter == 'ai_vision' ? 2 : 4)
-              : items.length;
+          final currentDisplayCount = items.length;
 
-          final totalCalories = isDemo
-              ? (provider.selectedFilter == 'barcode_scan'
-                  ? 370
-                  : (provider.selectedFilter == 'ai_vision' ? 1080 : 1760))
-              : (provider.selectedFilter == 'barcode_scan'
-                  ? barcodeCalories
-                  : (provider.selectedFilter == 'ai_vision' ? aiCalories : allCalories));
+          final totalCalories = provider.selectedFilter == 'barcode_scan'
+              ? barcodeCalories
+              : (provider.selectedFilter == 'ai_vision' ? aiCalories : allCalories);
 
           return CustomScrollView(
             slivers: [
@@ -539,9 +530,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // 2. Food Items List / Empty State
               items.isEmpty
                   ? SliverToBoxAdapter(
-                      child: isDemo
-                          ? _buildDemoOrEmptyState(context, provider)
-                          : _buildEmptyDateState(context, provider),
+                      child: _buildEmptyDateState(context, provider),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -645,11 +634,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String _getMealTime(FoodItem item) {
-    if (item.id == 'demo_1') return '12:30 น. • มื้อเที่ยง';
-    if (item.id == 'demo_2') return '08:15 น. • มื้อเช้า';
-    if (item.id == 'demo_3') return '15:00 น. • มื้อว่าง';
-    if (item.id == 'demo_4') return '19:15 น. • มื้อเย็น';
-
     final hour = item.scannedAt.hour;
     final timeStr = DateFormat('HH:mm').format(item.scannedAt);
     String mealName;
@@ -811,113 +795,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDemoOrEmptyState(BuildContext context, NutritionProvider provider) {
-    // Demo cards representing Figma Screen 1 layout when DB is fresh
-    final demoItems = [
-      FoodItem(
-        id: 'demo_1',
-        name: 'ข้าวกะเพราไก่ไข่ดาว',
-        calories: 560,
-        protein: 26,
-        carbohydrates: 65,
-        fat: 20,
-        imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
-        scannedAt: DateTime.now(),
-        source: 'ai_vision',
-      ),
-      FoodItem(
-        id: 'demo_2',
-        name: 'ข้าวโอ๊ตออร์แกนิก เนเชอร์สพ...',
-        calories: 190,
-        protein: 6,
-        carbohydrates: 32,
-        fat: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
-        source: 'barcode_scan',
-      ),
-      FoodItem(
-        id: 'demo_3',
-        name: 'โยเกิร์ตกรีกพร้อมเบอร์รีรวม',
-        calories: 180,
-        protein: 12,
-        carbohydrates: 20,
-        fat: 5,
-        imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(days: 1)),
-        source: 'barcode_scan',
-      ),
-      FoodItem(
-        id: 'demo_4',
-        name: 'ชามสลัดแซลมอนย่าง',
-        calories: 520,
-        protein: 34,
-        carbohydrates: 28,
-        fat: 22,
-        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
-        source: 'ai_vision',
-      ),
-    ];
-
-    if (provider.selectedFilter != 'all') {
-      final filtered = demoItems.where((i) => i.source == provider.selectedFilter).toList();
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: filtered
-              .map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildFoodCard(context, provider, item),
-                  ))
-              .toList(),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...demoItems.take(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildFoodCard(context, provider, item),
-              )),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    'เมื่อวานนี้, 23 ต.ค.',
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'รวม 700 กิโลแคลอรี่',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...demoItems.skip(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildFoodCard(context, provider, item),
-              )),
-        ],
       ),
     );
   }

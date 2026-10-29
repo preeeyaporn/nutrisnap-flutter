@@ -30,7 +30,73 @@ void main() {
   }
 
   group('HistoryScreen Widget Tests', () {
-    testWidgets('renders all visual elements matching Figma Screen 1', (tester) async {
+    testWidgets('renders clean zero-history state on initial launch', (tester) async {
+      await tester.pumpWidget(buildTestableWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('ประวัติมื้ออาหาร'), findsOneWidget);
+      expect(find.textContaining('ประวัติการรับประทาน'), findsOneWidget);
+      expect(find.text('ตรวจสอบและปรับแต่งบันทึกโภชนาการของคุณ'), findsOneWidget);
+      expect(find.text('บันทึกแล้ว 0 มื้อ'), findsOneWidget);
+      expect(find.text('🍴 ทั้งหมด (0)'), findsOneWidget);
+      expect(find.text('║█║ บาร์โค้ด (0)'), findsOneWidget);
+      expect(find.text('✨ กล้อง AI (0)'), findsOneWidget);
+      expect(find.text('ไม่มีบันทึกมื้ออาหารในวันนี้'), findsOneWidget);
+      expect(
+        find.text('สามารถสแกนบาร์โค้ดหรือถ่ายภาพอาหารด้วย AI เพื่อบันทึกมื้อนี้ได้ทันที'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders all visual elements matching Figma Screen 1 when meals exist', (tester) async {
+      tester.view.physicalSize = const Size(390, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final now = DateTime.now();
+      await localRepo.saveFoodItem(FoodItem(
+        id: 'meal_1',
+        name: 'ข้าวกะเพราไก่ไข่ดาว',
+        calories: 560,
+        protein: 26,
+        carbohydrates: 65,
+        fat: 20,
+        scannedAt: DateTime(now.year, now.month, now.day, 12, 30),
+        source: 'ai_vision',
+      ));
+      await localRepo.saveFoodItem(FoodItem(
+        id: 'meal_2',
+        name: 'ข้าวโอ๊ตออร์แกนิก',
+        calories: 190,
+        protein: 6,
+        carbohydrates: 32,
+        fat: 4,
+        scannedAt: DateTime(now.year, now.month, now.day, 8, 15),
+        source: 'barcode_scan',
+      ));
+      await localRepo.saveFoodItem(FoodItem(
+        id: 'meal_3',
+        name: 'โยเกิร์ตกรีก',
+        calories: 180,
+        protein: 12,
+        carbohydrates: 20,
+        fat: 5,
+        scannedAt: DateTime(now.year, now.month, now.day, 15, 0),
+        source: 'barcode_scan',
+      ));
+      await localRepo.saveFoodItem(FoodItem(
+        id: 'meal_4',
+        name: 'ชามสลัดแซลมอน',
+        calories: 520,
+        protein: 34,
+        carbohydrates: 28,
+        fat: 22,
+        scannedAt: DateTime(now.year, now.month, now.day, 19, 15),
+        source: 'ai_vision',
+      ));
+      await provider.loadRecentScans();
+
       await tester.pumpWidget(buildTestableWidget());
       await tester.pumpAndSettle();
 
@@ -41,8 +107,8 @@ void main() {
       expect(find.text('🍴 ทั้งหมด (4)'), findsOneWidget);
       expect(find.text('║█║ บาร์โค้ด (2)'), findsOneWidget);
       expect(find.text('✨ กล้อง AI (2)'), findsOneWidget);
-      expect(find.textContaining('12:30 น. • มื้อเที่ยง'), findsOneWidget);
-      expect(find.textContaining('08:15 น. • มื้อเช้า'), findsOneWidget);
+      expect(find.text('ข้าวกะเพราไก่ไข่ดาว'), findsOneWidget);
+      expect(find.text('ข้าวโอ๊ตออร์แกนิก'), findsOneWidget);
     });
 
     testWidgets('renders history food cards and items correctly', (tester) async {
