@@ -395,4 +395,23 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     }
     return syncResult;
   }
+
+  /// ดึงข้อมูลมื้ออาหารจาก Cloud Firestore ลงสู่ฐานข้อมูล Local Hive สำหรับผู้ใช้ปัจจุบัน
+  Future<Result<List<FoodItem>>> syncFromCloud() async {
+    final cloud = cloudRepository;
+    if (cloud == null || _currentUserId == null) {
+      return const Result.success([]);
+    }
+    try {
+      final cloudRes = await cloud.getAllFoodItems();
+      final cloudItems = cloudRes.dataOrNull ?? [];
+      for (final item in cloudItems) {
+        final toSave = item.copyWith(userId: _currentUserId, isSynced: true);
+        await _localRepository.saveFoodItem(toSave);
+      }
+      return Result.success(cloudItems);
+    } catch (e) {
+      return Result.failure('ไม่สามารถดึงข้อมูลจาก Cloud: $e');
+    }
+  }
 }

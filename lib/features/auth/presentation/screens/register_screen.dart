@@ -84,7 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       try {
         final nutritionProvider = context.read<NutritionProvider>();
-        await nutritionProvider.clearUserData(clearLocalDb: true);
+        await nutritionProvider.clearUserData(clearLocalDb: false);
       } catch (_) {}
 
       if (!mounted) return;

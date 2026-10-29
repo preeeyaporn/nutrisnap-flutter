@@ -586,6 +586,14 @@ class NutritionProvider extends ChangeNotifier {
     );
     if (userChanged) {
       loadRecentScans();
+      syncFromCloud();
+    }
+  }
+
+  Future<void> syncFromCloud() async {
+    final res = await _repository.syncFromCloud();
+    if (res.isSuccess && (res.dataOrNull?.isNotEmpty ?? false)) {
+      await loadRecentScans();
     }
   }
 
