@@ -464,7 +464,9 @@ class _ProfileTab extends StatelessWidget {
                       );
 
                       if (confirm == true && context.mounted) {
+                        final nutritionProvider = context.read<NutritionProvider>();
                         await context.read<AuthProvider>().signOut();
+                        await nutritionProvider.clearUserData(clearLocalDb: true);
                         if (context.mounted) {
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(

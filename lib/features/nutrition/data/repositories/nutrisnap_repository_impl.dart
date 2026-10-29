@@ -31,7 +31,11 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
   GeminiService get geminiService => _geminiService;
 
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
+
   void updateUserId(String newUserId) {
+    _currentUserId = newUserId;
     final cloud = cloudRepository;
     if (cloud is FirestoreFoodRepository) {
       cloud.updateUserId(newUserId);
@@ -44,6 +48,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     String? displayName,
     double? dailyTarget,
   }) {
+    _currentUserId = newUserId;
     final cloud = cloudRepository;
     if (cloud is FirestoreFoodRepository) {
       cloud.updateUserInfo(
@@ -57,13 +62,17 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
+    final itemToSave = (_currentUserId != null && item.userId == null)
+        ? item.copyWith(userId: _currentUserId)
+        : item;
+
     // 1. Save to local database (Hive)
-    final localResult = await _localRepository.saveFoodItem(item);
+    final localResult = await _localRepository.saveFoodItem(itemToSave);
     if (localResult.isFailure) return localResult;
 
     // 2. Sync to Cloud Firestore if connected
     if (cloudRepository != null) {
-      cloudRepository!.saveFoodItem(item).ignore();
+      cloudRepository!.saveFoodItem(itemToSave).ignore();
     }
 
     return Result.success(null);
@@ -297,6 +306,10 @@ class NutriSnapRepositoryImpl implements FoodRepository {
             if (cloudRepository != null) {
               cloudRepository!.deleteFoodItem(item.id).ignore();
             }
+          } else if (_currentUserId != null &&
+              item.userId != null &&
+              item.userId != _currentUserId) {
+            continue;
           } else {
             realItems.add(item);
           }
@@ -319,6 +332,10 @@ class NutriSnapRepositoryImpl implements FoodRepository {
             if (cloudRepository != null) {
               cloudRepository!.deleteFoodItem(item.id).ignore();
             }
+          } else if (_currentUserId != null &&
+              item.userId != null &&
+              item.userId != _currentUserId) {
+            continue;
           } else {
             realItems.add(item);
           }
@@ -371,6 +388,10 @@ class NutriSnapRepositoryImpl implements FoodRepository {
       if (item.id.startsWith('demo_')) {
         await _localRepository.deleteFoodItem(item.id);
         cloud.deleteFoodItem(item.id).ignore();
+      } else if (_currentUserId != null &&
+          item.userId != null &&
+          item.userId != _currentUserId) {
+        continue;
       } else {
         realItems.add(item);
       }

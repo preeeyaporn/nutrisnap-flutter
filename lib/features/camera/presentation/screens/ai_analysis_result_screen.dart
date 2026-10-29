@@ -193,58 +193,73 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
           children: [
             // Top Status Badges Row: "✦ ความแม่นยำ 94% • Gemini Vision API" + "● ตรวจสอบแล้ว"
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3E8FF),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Color(0xFF7C3AED),
+                          size: 13,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            'ความแม่นยำ $confidencePercent% • Gemini Vision API',
+                            style: AppTypography.chipText.copyWith(
+                              color: const Color(0xFF7C3AED),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 10,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3E8FF),
+                    color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Color(0xFF7C3AED),
-                        size: 14,
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF7C3AED),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 5),
                       Text(
-                        'ความแม่นยำ $confidencePercent% • Gemini Vision API',
+                        'ตรวจสอบแล้ว',
                         style: AppTypography.chipText.copyWith(
                           color: const Color(0xFF7C3AED),
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF7C3AED),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'ตรวจสอบแล้ว',
-                      style: AppTypography.chipText.copyWith(
-                        color: const Color(0xFF7C3AED),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -859,76 +874,79 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'พลังงานรวมโดยประมาณ',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: const Color(0xFF64748B),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'พลังงานรวมโดยประมาณ',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: const Color(0xFF64748B),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        calories.toInt().toString(),
-                        style: AppTypography.heading1.copyWith(
-                          fontSize: 38,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'กิโลแคลอรี่',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: const Color(0xFF475569),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${calories.toInt()} kcal',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: const Color(0xFF64748B),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(height: 4),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          calories.toInt().toString(),
+                          style: AppTypography.heading1.copyWith(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                            height: 1.1,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        Text(
+                          'กิโลแคลอรี่',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: const Color(0xFF475569),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${calories.toInt()} kcal',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: const Color(0xFF64748B),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
 
               // Circular flame badge matching Screen 8
               Container(
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF7C3AED), width: 4),
+                  border: Border.all(color: const Color(0xFF7C3AED), width: 3.5),
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.local_fire_department_rounded,
                     color: Color(0xFF7C3AED),
-                    size: 28,
+                    size: 26,
                   ),
                 ),
               ),
@@ -943,20 +961,32 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
               height: 9,
               child: Row(
                 children: [
-                  Expanded(
-                    flex: (proteinRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFF7C3AED)),
-                  ),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    flex: (carbsRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFF38BDF8)),
-                  ),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    flex: (fatRatio * 100).toInt().clamp(1, 100),
-                    child: Container(color: const Color(0xFFFB7185)),
-                  ),
+                  if ((proteinRatio * 100).round() > 0)
+                    Expanded(
+                      flex: (proteinRatio * 100).round().clamp(1, 100),
+                      child: Container(color: const Color(0xFF7C3AED)),
+                    ),
+                  if ((proteinRatio * 100).round() > 0 &&
+                      ((carbsRatio * 100).round() > 0 || (fatRatio * 100).round() > 0))
+                    const SizedBox(width: 2),
+                  if ((carbsRatio * 100).round() > 0)
+                    Expanded(
+                      flex: (carbsRatio * 100).round().clamp(1, 100),
+                      child: Container(color: const Color(0xFF38BDF8)),
+                    ),
+                  if ((carbsRatio * 100).round() > 0 && (fatRatio * 100).round() > 0)
+                    const SizedBox(width: 2),
+                  if ((fatRatio * 100).round() > 0)
+                    Expanded(
+                      flex: (fatRatio * 100).round().clamp(1, 100),
+                      child: Container(color: const Color(0xFFFB7185)),
+                    ),
+                  if ((proteinRatio * 100).round() == 0 &&
+                      (carbsRatio * 100).round() == 0 &&
+                      (fatRatio * 100).round() == 0)
+                    Expanded(
+                      child: Container(color: const Color(0xFFE2E8F0)),
+                    ),
                 ],
               ),
             ),
@@ -1056,20 +1086,26 @@ class _AiAnalysisResultScreenState extends State<AiAnalysisResultScreen> {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            percentage,
-            style: AppTypography.bodySmall.copyWith(
-              color: const Color(0xFF7C3AED),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              percentage,
+              style: AppTypography.bodySmall.copyWith(
+                color: indicatorColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            altText,
-            style: AppTypography.bodySmall.copyWith(
-              color: const Color(0xFF94A3B8),
-              fontSize: 10,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              altText,
+              style: AppTypography.bodySmall.copyWith(
+                color: const Color(0xFF94A3B8),
+                fontSize: 10,
+              ),
             ),
           ),
         ],

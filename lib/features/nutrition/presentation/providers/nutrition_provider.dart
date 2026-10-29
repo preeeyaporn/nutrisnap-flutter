@@ -559,8 +559,15 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
+
   void updateUserId(String newUserId) {
-    _repository.updateUserId(newUserId);
+    if (_currentUserId != newUserId) {
+      _currentUserId = newUserId;
+      _repository.updateUserId(newUserId);
+      loadRecentScans();
+    }
   }
 
   void updateUserInfo({
@@ -569,12 +576,29 @@ class NutritionProvider extends ChangeNotifier {
     String? displayName,
     double? dailyTarget,
   }) {
+    final userChanged = _currentUserId != newUserId;
+    _currentUserId = newUserId;
     _repository.updateUserInfo(
       newUserId: newUserId,
       email: email,
       displayName: displayName,
       dailyTarget: dailyTarget,
     );
+    if (userChanged) {
+      loadRecentScans();
+    }
+  }
+
+  Future<void> clearUserData({bool clearLocalDb = false}) async {
+    if (clearLocalDb) {
+      await _repository.clearAll();
+    }
+    _currentUserId = null;
+    _recentScans = [];
+    _currentProduct = null;
+    _currentAiAnalysis = null;
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<bool> syncCloud() async {

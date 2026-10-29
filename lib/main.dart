@@ -97,6 +97,8 @@ class NutriSnapApp extends StatelessWidget {
                 displayName: user.displayName,
                 dailyTarget: user.dailyCalorieTarget,
               );
+            } else {
+              nutritionProvider?.clearUserData();
             }
             return nutritionProvider!;
           },

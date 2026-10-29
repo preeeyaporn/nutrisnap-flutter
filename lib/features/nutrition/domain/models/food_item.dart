@@ -27,6 +27,7 @@ class FoodItem {
   final bool isReported; // สถานะรายงานข้อมูลไม่ตรงกับฉลากจริง
   final String? reportNote; // หมายเหตุการรายงานข้อมูลผิดพลาด
   final String? category; // 'snack', 'beverage', 'dairy', 'instant_meal', 'main_meal'
+  final String? userId; // ผู้ใช้งานเจ้าของรายการอาหาร
 
   const FoodItem({
     required this.id,
@@ -54,6 +55,7 @@ class FoodItem {
     this.isReported = false,
     this.reportNote,
     this.category,
+    this.userId,
   });
 
   FoodItem copyWith({
@@ -82,6 +84,7 @@ class FoodItem {
     bool? isReported,
     String? reportNote,
     String? category,
+    String? userId,
   }) {
     return FoodItem(
       id: id ?? this.id,
@@ -109,6 +112,7 @@ class FoodItem {
       isReported: isReported ?? this.isReported,
       reportNote: reportNote ?? this.reportNote,
       category: category ?? this.category,
+      userId: userId ?? this.userId,
     );
   }
 
@@ -140,6 +144,7 @@ class FoodItem {
       'isReported': isReported,
       'reportNote': reportNote,
       'category': category,
+      'userId': userId,
     };
   }
 
@@ -179,6 +184,7 @@ class FoodItem {
       isReported: map['isReported'] == true,
       reportNote: map['reportNote']?.toString(),
       category: map['category']?.toString(),
+      userId: map['userId']?.toString(),
     );
   }
 

@@ -650,6 +650,71 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
             ),
           ),
         ),
+        if (provider.recentScans.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF94A3B8),
+              ),
+              icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+              label: const Text(
+                'ล้างข้อมูลแคชในเครื่อง (เริ่มต้นใหม่)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              onPressed: () async {
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Row(
+                      children: const [
+                        Icon(Icons.delete_sweep_outlined, color: Color(0xFFEF4444)),
+                        SizedBox(width: 8),
+                        Text('ล้างข้อมูลในเครื่อง', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    content: const Text(
+                      'คุณต้องการล้างข้อมูลประวัติและรูปภาพอาหารที่แคชไว้ในเครื่องทั้งหมดใช่หรือไม่? (ข้อมูลจะเริ่มใหม่เป็น 0 มื้อ)',
+                      style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('ล้างข้อมูล'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && mounted) {
+                  await provider.clearAllHistory();
+                  if (mounted) {
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: const Text('ล้างข้อมูลประวัติในเครื่องเรียบร้อยแล้ว (เริ่มต้นใหม่ 0 มื้อ)'),
+                        backgroundColor: const Color(0xFF16A34A),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        ],
       ],
     );
   }
