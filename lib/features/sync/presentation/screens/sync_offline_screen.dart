@@ -9,10 +9,12 @@ import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 
 class SyncOfflineScreen extends StatefulWidget {
   final VoidCallback? onGoToHistory;
+  final void Function(int)? onNavigateTab;
 
   const SyncOfflineScreen({
     super.key,
     this.onGoToHistory,
+    this.onNavigateTab,
   });
 
   @override
@@ -136,15 +138,18 @@ class _SyncOfflineScreenState extends State<SyncOfflineScreen> {
               }
             },
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFF7C3AED),
-              shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () => widget.onNavigateTab?.call(3),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: Color(0xFF7C3AED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
           ),
         ],
       ),

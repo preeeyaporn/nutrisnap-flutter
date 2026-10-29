@@ -11,7 +11,12 @@ import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_deta
 import 'package:nutrisnap/features/nutrition/presentation/widgets/food_image_view.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final void Function(int)? onNavigateTab;
+
+  const HistoryScreen({
+    super.key,
+    this.onNavigateTab,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -111,15 +116,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               }
             },
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFF7C3AED),
-              shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () => widget.onNavigateTab?.call(3),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: Color(0xFF7C3AED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
           ),
         ],
       ),

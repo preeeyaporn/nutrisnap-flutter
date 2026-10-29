@@ -28,9 +28,10 @@ class _MainShellScreenState extends State<MainShellScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     _pages = [
       HomeScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
-      const HistoryScreen(),
+      HistoryScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
       SyncOfflineScreen(
         onGoToHistory: () => setState(() => _currentIndex = 1),
+        onNavigateTab: (index) => setState(() => _currentIndex = index),
       ),
       const _ProfileTab(),
     ];
