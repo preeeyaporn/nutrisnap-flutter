@@ -1390,6 +1390,187 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
       ],
     ),
 
+    // หมวดที่ 7: ขนมปังและเบเกอรี่ยอดนิยม (Bakery, Bread & Toast)
+    '8850123110292': _item(
+      barcode: '8850123110292',
+      name: 'ขนมปังรอยัลโฮลวีท ฟาร์มเฮ้าส์ (Farmhouse Royal 12-Grain / Whole Wheat)',
+      brand: 'ฟาร์มเฮ้าส์ (Farmhouse)',
+      servingSize: '50 กรัม (2 แผ่น)',
+      kcal: 130.0,
+      protein: 6.0,
+      carbs: 22.0,
+      fat: 2.0,
+      sugar: 2.0,
+      fiber: 4.0,
+      satFat: 0.5,
+      sodium: 170.0,
+      grade: 'A',
+      ingredients: [
+        'แป้งสาลีโฮลวีท 45%',
+        'แป้งสาลี 30%',
+        'ธัญพืชรวม 12 ชนิด 10%',
+        'ยีสต์ 2%',
+        'เกลือไอโอดีน 1%',
+      ],
+    ),
+    '8850123110018': _item(
+      barcode: '8850123110018',
+      name: 'ขนมปังชนิดแผ่น ฟาร์มเฮ้าส์ (Farmhouse White Bread)',
+      brand: 'ฟาร์มเฮ้าส์ (Farmhouse)',
+      servingSize: '50 กรัม (2 แผ่น)',
+      kcal: 140.0,
+      protein: 5.0,
+      carbs: 26.0,
+      fat: 1.5,
+      sugar: 3.0,
+      fiber: 1.0,
+      satFat: 0.5,
+      sodium: 180.0,
+      grade: 'B',
+      ingredients: [
+        'แป้งสาลี 70%',
+        'น้ำตาล 4%',
+        'เนยขาว 3%',
+        'ยีสต์ 2%',
+        'เกลือบริโภคเสริมไอโอดีน 1%',
+      ],
+    ),
+    '8850123112012': _item(
+      barcode: '8850123112012',
+      name: 'ขนมปังแซนด์วิชตัดขอบ ฟาร์มเฮ้าส์ (Farmhouse Crustless Sandwich Bread)',
+      brand: 'ฟาร์มเฮ้าส์ (Farmhouse)',
+      servingSize: '45 กรัม',
+      kcal: 120.0,
+      protein: 4.0,
+      carbs: 23.0,
+      fat: 1.5,
+      sugar: 2.5,
+      fiber: 1.0,
+      satFat: 0.5,
+      sodium: 160.0,
+      grade: 'B',
+      ingredients: [
+        'แป้งสาลี 72%',
+        'น้ำตาล 4%',
+        'ไขมันพืช 3%',
+        'ยีสต์ 2%',
+      ],
+    ),
+    '8851351381014': _item(
+      barcode: '8851351381014',
+      name: 'แซนด์วิชกระเป๋า เลอแปง ไส้ทูน่ามายองเนส (Le Pan Pocket Sandwich)',
+      brand: 'เลอแปง (Le Pan)',
+      servingSize: '70 กรัม',
+      kcal: 190.0,
+      protein: 7.0,
+      carbs: 24.0,
+      fat: 7.0,
+      sugar: 4.0,
+      fiber: 1.0,
+      satFat: 1.5,
+      sodium: 320.0,
+      grade: 'C',
+      ingredients: [
+        'ขนมปังแซนด์วิช 60%',
+        'ไส้ทูน่ามายองเนส 40%',
+      ],
+    ),
+    '8851351382028': _item(
+      barcode: '8851351382028',
+      name: 'แซนด์วิชกระเป๋า เลอแปง ไส้หมูหยองน้ำสลัด (Le Pan Shredded Pork Salad)',
+      brand: 'เลอแปง (Le Pan)',
+      servingSize: '75 กรัม',
+      kcal: 210.0,
+      protein: 6.0,
+      carbs: 28.0,
+      fat: 8.0,
+      sugar: 7.0,
+      fiber: 1.0,
+      satFat: 2.0,
+      sodium: 350.0,
+      grade: 'C',
+      ingredients: [
+        'ขนมปังแซนด์วิช 58%',
+        'หมูหยอง 22%',
+        'น้ำสลัด 20%',
+      ],
+    ),
+    '8851351000106': _item(
+      barcode: '8851351000106',
+      name: 'ขนมปังฮอทดอกไส้ครีม เลอแปง (Le Pan Hot Dog Bun with Cream)',
+      brand: 'เลอแปง (Le Pan)',
+      servingSize: '65 กรัม',
+      kcal: 220.0,
+      protein: 4.0,
+      carbs: 32.0,
+      fat: 9.0,
+      sugar: 11.0,
+      fiber: 1.0,
+      satFat: 4.0,
+      sodium: 190.0,
+      grade: 'D',
+      ingredients: [
+        'แป้งสาลี 55%',
+        'ครีมวานิลลา 30%',
+        'เนยสด 8%',
+        'น้ำตาล 5%',
+      ],
+    ),
+    '8850718821754': _item(
+      barcode: '8850718821754',
+      name: "เลย์ สแตคส์ มันฝรั่งทอดกรอบ รสโนริสาหร่าย (Lay's Stax Nori Seaweed)",
+      brand: "เลย์ (Lay's)",
+      servingSize: '42 กรัม',
+      kcal: 220.0,
+      protein: 2.0,
+      carbs: 26.0,
+      fat: 11.0,
+      sugar: 2.0,
+      fiber: 2.0,
+      satFat: 5.0,
+      sodium: 190.0,
+      grade: 'E',
+      customImage: 'assets/images/lays_sour_cream.png',
+      ingredients: [
+        'มันฝรั่งอบแห้ง 58%',
+        'น้ำมันปาล์มโอเลอีน 28%',
+        'แป้งสาลี 7%',
+        'ผงปรุงรสโนริสาหร่าย 5%',
+      ],
+    ),
+    '8850123000012': _item(
+      barcode: '8850123000012',
+      name: 'ขนมปังแซนด์วิช ฟาร์มเฮ้าส์ รสดั้งเดิม (Farmhouse Standard Bread)',
+      brand: 'ฟาร์มเฮ้าส์ (Farmhouse)',
+      servingSize: '50 กรัม',
+      kcal: 140.0,
+      protein: 5.0,
+      carbs: 26.0,
+      fat: 1.5,
+      sugar: 3.0,
+      fiber: 1.0,
+      satFat: 0.5,
+      sodium: 180.0,
+      grade: 'B',
+      ingredients: ['แป้งสาลี', 'น้ำตาล', 'ยีสต์', 'เกลือ'],
+    ),
+    '8851351000014': _item(
+      barcode: '8851351000014',
+      name: 'แซนด์วิชแฮมชีส เลอแปง (Le Pan Ham & Cheese Sandwich)',
+      brand: 'เลอแปง (Le Pan)',
+      servingSize: '85 กรัม',
+      kcal: 230.0,
+      protein: 9.0,
+      carbs: 25.0,
+      fat: 10.0,
+      sugar: 3.0,
+      fiber: 1.0,
+      satFat: 3.5,
+      sodium: 460.0,
+      grade: 'C',
+      ingredients: ['ขนมปัง 50%', 'แฮมหมู 25%', 'เชดด้าชีส 15%', 'มายองเนส 10%'],
+    ),
+
     // หมวดที่ 6: สินค้าสากลยอดนิยม
     '3017620422003': _item(
       barcode: '3017620422003',
@@ -1423,6 +1604,16 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
     final prefix = barcode.substring(0, 7);
 
     switch (prefix) {
+      case '8850123': // ฟาร์มเฮ้าส์ (Farmhouse Bakery)
+        return _verifiedCatalog['8850123110292']!.copyWith(
+          barcode: barcode,
+          id: 'off_$barcode',
+        );
+      case '8851351': // ซีพีแรม / เลอแปง (Le Pan Bakery)
+        return _verifiedCatalog['8851351381014']!.copyWith(
+          barcode: barcode,
+          id: 'off_$barcode',
+        );
       case '8850718': // เครือ PepsiCo / Frito-Lay (เลย์, ตะวัน, ซันไบทส์)
         return _verifiedCatalog['8850718801497']!.copyWith(
           barcode: barcode,
@@ -1736,7 +1927,21 @@ class OpenFoodFactsServiceImpl implements OpenFoodFactsService {
                   as String)
               .toLowerCase();
 
-      if (pName.contains('chip') ||
+      if (pName.contains('bread') ||
+          pName.contains('ขนมปัง') ||
+          pName.contains('toast') ||
+          pName.contains('sandwich') ||
+          pName.contains('bakery') ||
+          pCategories.contains('bread') ||
+          pCategories.contains('bakery') ||
+          pCategories.contains('sandwich')) {
+        estimatedCalories = 130.0;
+        estimatedProtein = 5.0;
+        estimatedCarbs = 24.0;
+        estimatedFat = 2.0;
+        estimatedSugar = 3.0;
+        estimatedFiber = 2.0;
+      } else if (pName.contains('chip') ||
           pName.contains('มันฝรั่ง') ||
           pCategories.contains('chip') ||
           pCategories.contains('snack')) {
