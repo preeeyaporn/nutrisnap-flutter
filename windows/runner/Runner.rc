@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.nutrisnap" "\0"
-            VALUE "FileDescription", "nutrisnap" "\0"
+            VALUE "FileDescription", "NutriSnap" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "nutrisnap" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.nutrisnap. All rights reserved." "\0"
             VALUE "OriginalFilename", "nutrisnap.exe" "\0"
-            VALUE "ProductName", "nutrisnap" "\0"
+            VALUE "ProductName", "NutriSnap" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
@@ -119,3 +119,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+
