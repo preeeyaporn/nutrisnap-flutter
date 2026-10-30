@@ -31,7 +31,11 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
   GeminiService get geminiService => _geminiService;
 
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
+
   void updateUserId(String newUserId) {
+    _currentUserId = newUserId;
     final cloud = cloudRepository;
     if (cloud is FirestoreFoodRepository) {
       cloud.updateUserId(newUserId);
@@ -44,6 +48,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     String? displayName,
     double? dailyTarget,
   }) {
+    _currentUserId = newUserId;
     final cloud = cloudRepository;
     if (cloud is FirestoreFoodRepository) {
       cloud.updateUserInfo(
@@ -57,13 +62,17 @@ class NutriSnapRepositoryImpl implements FoodRepository {
 
   @override
   Future<Result<void>> saveFoodItem(FoodItem item) async {
+    final itemToSave = (_currentUserId != null && item.userId == null)
+        ? item.copyWith(userId: _currentUserId)
+        : item;
+
     // 1. Save to local database (Hive)
-    final localResult = await _localRepository.saveFoodItem(item);
+    final localResult = await _localRepository.saveFoodItem(itemToSave);
     if (localResult.isFailure) return localResult;
 
     // 2. Sync to Cloud Firestore if connected
     if (cloudRepository != null) {
-      cloudRepository!.saveFoodItem(item).ignore();
+      cloudRepository!.saveFoodItem(itemToSave).ignore();
     }
 
     return Result.success(null);
@@ -238,6 +247,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     required List<int> imageBytes,
     String mimeType = 'image/jpeg',
     String? userNotes,
+    String? imagePath,
   }) async {
     final aiResult = await _geminiService.analyzeFoodImage(
       imageBytes: imageBytes,
@@ -248,7 +258,7 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     return aiResult.when(
       success: (analysis) async {
         // Automatically create and persist FoodItem
-        final foodItem = analysis.toFoodItem();
+        final foodItem = analysis.toFoodItem(imageUrl: imagePath);
         await saveFoodItem(foodItem);
         return Result.success(analysis);
       },
@@ -288,18 +298,36 @@ class NutriSnapRepositoryImpl implements FoodRepository {
   Future<Result<List<FoodItem>>> getAllFoodItems() async {
     final res = await _localRepository.getAllFoodItems();
     return res.when(
-      success: (items) async =>
-          Result.success(await _syncVerifiedCatalogItems(items)),
+      success: (items) async {
+        final realItems = <FoodItem>[];
+        for (final item in items) {
+          if (item.id.startsWith('demo_')) {
+            await _localRepository.deleteFoodItem(item.id);
+            if (cloudRepository != null) {
+              cloudRepository!.deleteFoodItem(item.id).ignore();
+            }
+          } else if (_currentUserId != null) {
+            if (item.userId == null) {
+              // ลบรายการแคชเก่าที่ตกค้างจากการทดสอบก่อนหน้าออกจากเครื่องอัตโนมัติ
+              await _localRepository.deleteFoodItem(item.id);
+            } else if (item.userId == _currentUserId) {
+              realItems.add(item);
+            }
+          } else {
+            realItems.add(item);
+          }
+        }
+        return Result.success(await _syncVerifiedCatalogItems(realItems));
+      },
       failure: (msg, ex) => Result.failure(msg, ex),
     );
   }
 
   @override
   Future<Result<List<FoodItem>>> getRecentScans({int limit = 20}) async {
-    final res = await _localRepository.getRecentScans(limit: limit);
-    return res.when(
-      success: (items) async =>
-          Result.success(await _syncVerifiedCatalogItems(items)),
+    final allRes = await getAllFoodItems();
+    return allRes.when(
+      success: (items) => Result.success(items.take(limit).toList()),
       failure: (msg, ex) => Result.failure(msg, ex),
     );
   }
@@ -339,78 +367,51 @@ class NutriSnapRepositoryImpl implements FoodRepository {
     }
 
     final localItemsResult = await _localRepository.getAllFoodItems();
-    var items = localItemsResult.dataOrNull ?? [];
+    final items = localItemsResult.dataOrNull ?? [];
 
-    if (items.isEmpty) {
-      final initialDemos = [
-        FoodItem(
-          id: 'demo_1',
-          name: 'ข้าวกะเพราไก่ไข่ดาว',
-          calories: 560,
-          protein: 26,
-          carbohydrates: 65,
-          fat: 20,
-          nutriScore: 'B',
-          imageUrl:
-              'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
-          scannedAt: DateTime.now(),
-          source: 'ai_vision',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_2',
-          name: 'ข้าวโอ๊ตออร์แกนิก เนเชอร์สพอยท์',
-          calories: 190,
-          protein: 6,
-          carbohydrates: 32,
-          fat: 4,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
-          source: 'barcode_scan',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_3',
-          name: 'โยเกิร์ตกรีกพร้อมเบอร์รีรวม',
-          calories: 180,
-          protein: 12,
-          carbohydrates: 20,
-          fat: 5,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(days: 1)),
-          source: 'barcode_scan',
-          isSynced: false,
-        ),
-        FoodItem(
-          id: 'demo_4',
-          name: 'ชามสลัดแซลมอนย่าง',
-          calories: 520,
-          protein: 34,
-          carbohydrates: 28,
-          fat: 22,
-          nutriScore: 'A',
-          imageUrl:
-              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
-          scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
-          source: 'ai_vision',
-          isSynced: false,
-        ),
-      ];
-
-      for (final demo in initialDemos) {
-        await _localRepository.saveFoodItem(demo);
+    final realItems = <FoodItem>[];
+    for (final item in items) {
+      if (item.id.startsWith('demo_')) {
+        await _localRepository.deleteFoodItem(item.id);
+        cloud.deleteFoodItem(item.id).ignore();
+      } else if (_currentUserId != null) {
+        if (item.userId == null) {
+          await _localRepository.deleteFoodItem(item.id);
+        } else if (item.userId == _currentUserId) {
+          realItems.add(item);
+        }
+      } else {
+        realItems.add(item);
       }
-      items = initialDemos;
     }
 
-    final syncResult = await cloud.syncBatch(items);
+    if (realItems.isEmpty) {
+      return const Result.success(0);
+    }
+
+    final syncResult = await cloud.syncBatch(realItems);
     if (syncResult.isSuccess && _localRepository is HiveFoodRepository) {
-      await _localRepository.markAsSynced(items.map((i) => i.id).toList());
+      await _localRepository.markAsSynced(realItems.map((i) => i.id).toList());
     }
     return syncResult;
+  }
+
+  /// ดึงข้อมูลมื้ออาหารจาก Cloud Firestore ลงสู่ฐานข้อมูล Local Hive สำหรับผู้ใช้ปัจจุบัน
+  Future<Result<List<FoodItem>>> syncFromCloud() async {
+    final cloud = cloudRepository;
+    if (cloud == null || _currentUserId == null) {
+      return const Result.success([]);
+    }
+    try {
+      final cloudRes = await cloud.getAllFoodItems();
+      final cloudItems = cloudRes.dataOrNull ?? [];
+      for (final item in cloudItems) {
+        final toSave = item.copyWith(userId: _currentUserId, isSynced: true);
+        await _localRepository.saveFoodItem(toSave);
+      }
+      return Result.success(cloudItems);
+    } catch (e) {
+      return Result.failure('ไม่สามารถดึงข้อมูลจาก Cloud: $e');
+    }
   }
 }

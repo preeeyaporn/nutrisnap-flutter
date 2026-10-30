@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
 import 'core/database/local/hive_food_repository.dart';
@@ -49,6 +50,20 @@ void main() async {
   final openFoodFactsService = OpenFoodFactsServiceImpl();
   final geminiService = GeminiServiceImpl(apiKey: activeApiKey);
   final localFoodRepo = HiveFoodRepository();
+
+  // ตรวจสอบการเปิดใช้งานครั้งแรก: เคลียร์ข้อมูล mock/แคชเดิมในเครื่องให้เริ่มต้น 0 มื้ออย่างแท้จริง
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final hasCleanedInitialHistory =
+        prefs.getBool('has_cleaned_initial_history_v3') ?? false;
+    if (!hasCleanedInitialHistory) {
+      await localFoodRepo.clearAll();
+      await prefs.setBool('has_cleaned_initial_history_v3', true);
+    }
+  } catch (e) {
+    debugPrint('Initial clean check notice: $e');
+  }
+
   final cloudFoodRepo = FirestoreFoodRepository(userId: 'default_user');
 
   final nutrisnapRepository = NutriSnapRepositoryImpl(
@@ -97,6 +112,8 @@ class NutriSnapApp extends StatelessWidget {
                 displayName: user.displayName,
                 dailyTarget: user.dailyCalorieTarget,
               );
+            } else {
+              nutritionProvider?.clearUserData();
             }
             return nutritionProvider!;
           },

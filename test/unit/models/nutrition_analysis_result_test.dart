@@ -43,7 +43,8 @@ void main() {
       expect(foodItem.calories, sampleResult.calories);
       expect(foodItem.protein, sampleResult.protein);
       expect(foodItem.nutriScore, 'B');
-      expect(foodItem.source, 'gemini_vision');
+      expect(foodItem.source, 'ai_vision');
+      expect(foodItem.isAi, isTrue);
     });
 
     test('fromMap handles missing fields with safe defaults', () {

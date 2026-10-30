@@ -28,9 +28,10 @@ class _MainShellScreenState extends State<MainShellScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     _pages = [
       HomeScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
-      const HistoryScreen(),
+      HistoryScreen(onNavigateTab: (index) => setState(() => _currentIndex = index)),
       SyncOfflineScreen(
         onGoToHistory: () => setState(() => _currentIndex = 1),
+        onNavigateTab: (index) => setState(() => _currentIndex = index),
       ),
       const _ProfileTab(),
     ];
@@ -226,10 +227,31 @@ class _ProfileTab extends StatelessWidget {
                             color: AppColors.neutralSecondary,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'เป้าหมาย $targetKcal kcal / วัน',
-                          style: AppTypography.bodySmall,
+                        const SizedBox(height: 4),
+                        InkWell(
+                          onTap: () => _showEditCalorieTargetDialog(
+                            context,
+                            user?.dailyCalorieTarget ?? 2000.0,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'เป้าหมาย $targetKcal kcal / วัน',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: const Color(0xFF7C3AED),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: Color(0xFF7C3AED),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -249,6 +271,26 @@ class _ProfileTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  ListTile(
+                    leading: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Color(0xFFEF4444),
+                    ),
+                    title: Text(
+                      'ปรับแต่งเป้าหมายแคลอรีประจำวัน',
+                      style: AppTypography.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      'เป้าหมายปัจจุบัน: $targetKcal kcal / วัน (กดเพื่อแก้ไข)',
+                      style: AppTypography.bodySmall,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showEditCalorieTargetDialog(
+                      context,
+                      user?.dailyCalorieTarget ?? 2000.0,
+                    ),
+                  ),
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(
                       Icons.cloud_sync_outlined,
@@ -422,7 +464,9 @@ class _ProfileTab extends StatelessWidget {
                       );
 
                       if (confirm == true && context.mounted) {
+                        final nutritionProvider = context.read<NutritionProvider>();
                         await context.read<AuthProvider>().signOut();
+                        await nutritionProvider.clearUserData(clearLocalDb: false);
                         if (context.mounted) {
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(
@@ -440,6 +484,108 @@ class _ProfileTab extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showEditCalorieTargetDialog(BuildContext context, double currentTarget) {
+    final controller = TextEditingController(text: currentTarget.toStringAsFixed(0));
+    final authProvider = context.read<AuthProvider>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: const [
+                  Icon(Icons.local_fire_department_rounded, color: Color(0xFFEF4444)),
+                  SizedBox(width: 8),
+                  Text('กำหนดเป้าหมายแคลอรี', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'กำหนดพลังงานที่คุณต้องการบริโภคต่อวัน (kcal):',
+                    style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'เช่น 1800, 2000, 2200',
+                      suffixText: 'kcal / วัน',
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('หรือเลือกเป้าหมายแนะนำ:', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: [1500, 1800, 2000, 2200, 2500].map((cal) {
+                      return ActionChip(
+                        label: Text('$cal kcal', style: const TextStyle(fontSize: 11.5)),
+                        onPressed: () {
+                          setDialogState(() {
+                            controller.text = cal.toString();
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C3AED),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    final val = double.tryParse(controller.text.trim());
+                    if (val == null || val < 500 || val > 6000) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('กรุณากรอกตัวเลขแคลอรีระหว่าง 500 - 6,000 kcal')),
+                      );
+                      return;
+                    }
+                    Navigator.of(ctx).pop();
+                    await authProvider.updateDailyCalorieTarget(val);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('อัปเดตเป้าหมายเป็น ${val.toStringAsFixed(0)} kcal / วัน เรียบร้อยแล้ว'),
+                          backgroundColor: const Color(0xFF16A34A),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('บันทึกเป้าหมาย'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

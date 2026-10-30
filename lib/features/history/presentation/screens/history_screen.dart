@@ -8,9 +8,15 @@ import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_pr
 import 'package:nutrisnap/features/auth/presentation/providers/auth_provider.dart';
 import 'package:nutrisnap/features/auth/domain/models/user_model.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
+import 'package:nutrisnap/features/nutrition/presentation/widgets/food_image_view.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final void Function(int)? onNavigateTab;
+
+  const HistoryScreen({
+    super.key,
+    this.onNavigateTab,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -110,35 +116,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
               }
             },
           ),
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFF7C3AED),
-              shape: BoxShape.circle,
+          GestureDetector(
+            onTap: () => widget.onNavigateTab?.call(3),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: Color(0xFF7C3AED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
           ),
         ],
       ),
       body: Consumer<NutritionProvider>(
         builder: (context, provider, child) {
-          final hasRealData = provider.recentScans.isNotEmpty;
-          final isDemo = !hasRealData;
-          final items = provider.filteredScans;
+          // สรุปจำนวนมื้อและแคลอรี่รวมของวันนั้น โดยแยกตามที่มา
+          final allCount = provider.getMealCountForDate(_selectedDate);
+          final barcodeCount = provider.getMealCountForDate(_selectedDate, source: 'barcode_scan');
+          final aiCount = provider.getMealCountForDate(_selectedDate, source: 'ai_vision');
 
-          final allCount = isDemo ? 4 : provider.recentScans.length;
-          final barcodeCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'barcode_scan').length;
-          final aiCount = isDemo ? 2 : provider.recentScans.where((i) => i.source == 'ai_vision').length;
+          final allCalories = provider.getTotalCaloriesForDate(_selectedDate).toInt();
+          final barcodeCalories = provider.getTotalCaloriesForDate(_selectedDate, source: 'barcode_scan').toInt();
+          final aiCalories = provider.getTotalCaloriesForDate(_selectedDate, source: 'ai_vision').toInt();
 
-          final currentDisplayCount = isDemo
-              ? (provider.selectedFilter == 'barcode_scan' || provider.selectedFilter == 'ai_vision' ? 2 : 4)
-              : items.length;
+          final items = provider.getFilteredScansForDate(_selectedDate);
 
-          final totalCalories = isDemo
-              ? 1760
-              : (provider.totalCaloriesToday == 0 ? 1760 : provider.totalCaloriesToday.toInt());
+          final currentDisplayCount = items.length;
+
+          final totalCalories = provider.selectedFilter == 'barcode_scan'
+              ? barcodeCalories
+              : (provider.selectedFilter == 'ai_vision' ? aiCalories : allCalories);
 
           return CustomScrollView(
             slivers: [
@@ -221,20 +231,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             Flexible(
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.calendar_today_rounded, color: Color(0xFF7C3AED), size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDisplayDate(_selectedDate),
-                                      style: AppTypography.heading3.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () async {
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: _selectedDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime(2035),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _selectedDate = picked;
+                                      });
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.calendar_today_rounded, color: Color(0xFF7C3AED), size: 16),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _formatDisplayDate(_selectedDate),
+                                          style: AppTypography.heading3.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 20),
+                                      ],
                                     ),
-                                    const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary, size: 20),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -248,6 +277,184 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Daily Source Breakdown Cards (Barcode & AI Camera Quick Selector)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                provider.setSelectedFilter(
+                                  provider.selectedFilter == 'barcode_scan' ? 'all' : 'barcode_scan',
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: provider.selectedFilter == 'barcode_scan'
+                                      ? const Color(0xFFF3E8FF)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: provider.selectedFilter == 'barcode_scan'
+                                        ? const Color(0xFF7C3AED)
+                                        : const Color(0xFFE2E8F0),
+                                    width: provider.selectedFilter == 'barcode_scan' ? 1.5 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.qr_code_2_rounded, size: 15, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'บาร์โค้ด',
+                                              style: AppTypography.chipText.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF1E1B4B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '$barcodeCount มื้อ',
+                                            style: AppTypography.chipText.copyWith(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF7C3AED),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${NumberFormat('#,###').format(barcodeCalories)} kcal',
+                                      style: AppTypography.heading3.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                provider.setSelectedFilter(
+                                  provider.selectedFilter == 'ai_vision' ? 'all' : 'ai_vision',
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: provider.selectedFilter == 'ai_vision'
+                                      ? const Color(0xFFF3E8FF)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: provider.selectedFilter == 'ai_vision'
+                                        ? const Color(0xFF7C3AED)
+                                        : const Color(0xFFE2E8F0),
+                                    width: provider.selectedFilter == 'ai_vision' ? 1.5 : 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      alignment: WrapAlignment.spaceBetween,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.auto_awesome, size: 15, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'กล้อง AI',
+                                              style: AppTypography.chipText.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF1E1B4B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '$aiCount มื้อ',
+                                            style: AppTypography.chipText.copyWith(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF7C3AED),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${NumberFormat('#,###').format(aiCalories)} kcal',
+                                      style: AppTypography.heading3.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
 
@@ -331,7 +538,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // 2. Food Items List / Empty State
               items.isEmpty
                   ? SliverToBoxAdapter(
-                      child: _buildDemoOrEmptyState(context, provider),
+                      child: _buildEmptyDateState(context, provider),
                     )
                   : SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -435,11 +642,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String _getMealTime(FoodItem item) {
-    if (item.id == 'demo_1') return '12:30 น. • มื้อเที่ยง';
-    if (item.id == 'demo_2') return '08:15 น. • มื้อเช้า';
-    if (item.id == 'demo_3') return '15:00 น. • มื้อว่าง';
-    if (item.id == 'demo_4') return '19:15 น. • มื้อเย็น';
-
     final hour = item.scannedAt.hour;
     final timeStr = DateFormat('HH:mm').format(item.scannedAt);
     String mealName;
@@ -455,269 +657,337 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return '$timeStr น. • $mealName';
   }
 
-  Widget _buildFoodCard(BuildContext context, NutritionProvider provider, FoodItem item) {
-    final isAi = item.source == 'ai_vision';
-    final badgeLabel = isAi ? '• ✨ AI ประมาณการ' : '• ║█║ บาร์โค้ด';
-    final mealTime = _getMealTime(item);
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  Future<bool?> _showConfirmDeleteDialog(BuildContext context, FoodItem item) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_sweep_outlined, color: Color(0xFFEF4444), size: 24),
+            SizedBox(width: 8),
+            Text('ลบรายการอาหาร', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          'คุณต้องการลบ "${item.name}" ออกจากประวัติใช่หรือไม่?',
+          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('ลบรายการ'),
           ),
         ],
       ),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => NutritionDetailScreen(item: item),
-            ),
-          );
-        },
-        child: Row(
-          children: [
-            // Circular Thumbnail with badge
-            Stack(
-              children: [
-                ClipOval(
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    color: const Color(0xFFF1F5F9),
-                    child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                        ? Image.network(
-                            item.imageUrl!,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
-                          )
-                        : const Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF7C3AED),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isAi ? Icons.auto_awesome : Icons.qr_code_2,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 14),
+    );
+  }
 
-            // Middle Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildFoodCard(BuildContext context, NutritionProvider provider, FoodItem item) {
+    final isAi = item.isAi;
+    final badgeLabel = isAi ? '• ✨ AI ประมาณการ' : '• ║█║ บาร์โค้ด';
+    final mealTime = _getMealTime(item);
+
+    return Dismissible(
+      key: Key('history_item_${item.id}'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: const [
+            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
+            SizedBox(width: 8),
+            Text(
+              'ลบรายการ',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) => _showConfirmDeleteDialog(context, item),
+      onDismissed: (direction) async {
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        await provider.deleteFoodItem(item.id);
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text('ลบ "${item.name}" เรียบร้อยแล้ว'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => NutritionDetailScreen(item: item),
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              // Circular Thumbnail with badge
+              Stack(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3E8FF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      badgeLabel,
-                      style: AppTypography.chipText.copyWith(
-                        color: const Color(0xFF7C3AED),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                  ClipOval(
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      color: const Color(0xFFF1F5F9),
+                      child: FoodImageView(
+                        item: item,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        placeholder: const Center(
+                          child: Icon(Icons.fastfood_rounded, color: Color(0xFF7C3AED), size: 28),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.name,
-                    style: AppTypography.heading3.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF7C3AED),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isAi ? Icons.auto_awesome : Icons.qr_code_2,
+                        color: Colors.white,
+                        size: 12,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          mealTime,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${item.calories.toInt()} กิโลแคลอรี่',
-                        style: AppTypography.heading3.copyWith(
-                          color: const Color(0xFF7C3AED),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 14),
 
-            // Trailing arrow icon button
+              // Middle Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badgeLabel,
+                        style: AppTypography.chipText.copyWith(
+                          color: const Color(0xFF7C3AED),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.name,
+                      style: AppTypography.heading3.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            mealTime,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${item.calories.toInt()} กิโลแคลอรี่',
+                            style: AppTypography.heading3.copyWith(
+                              color: const Color(0xFF7C3AED),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Trailing action: Quick Delete button
+              GestureDetector(
+                onTap: () async {
+                  final confirm = await _showConfirmDeleteDialog(context, item);
+                  if (confirm == true && context.mounted) {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    await provider.deleteFoodItem(item.id);
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text('ลบ "${item.name}" เรียบร้อยแล้ว'),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEE2E2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyDateState(BuildContext context, NutritionProvider provider) {
+    final filterName = provider.selectedFilter == 'barcode_scan'
+        ? 'จากบาร์โค้ด'
+        : (provider.selectedFilter == 'ai_vision' ? 'จากกล้อง AI' : '');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      child: Center(
+        child: Column(
+          children: [
             Container(
-              width: 30,
-              height: 30,
+              width: 64,
+              height: 64,
               decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
+                color: Color(0xFFF3E8FF),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textSecondary,
-                size: 20,
+                Icons.no_meals_rounded,
+                size: 32,
+                color: Color(0xFF7C3AED),
               ),
             ),
+            const SizedBox(height: 14),
+            Text(
+              'ไม่มีบันทึกมื้ออาหาร$filterNameในวันนี้',
+              style: AppTypography.heading3.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'สามารถสแกนบาร์โค้ดหรือถ่ายภาพอาหารด้วย AI เพื่อบันทึกมื้อนี้ได้ทันที',
+              style: AppTypography.bodySmall.copyWith(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (provider.selectedFilter != 'all') ...[
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: () => provider.setSelectedFilter('all'),
+                icon: const Icon(Icons.clear_all_rounded, size: 16),
+                label: const Text('ดูอาหารทั้งหมดของวันนี้'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF7C3AED),
+                  side: const BorderSide(color: Color(0xFF7C3AED)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDemoOrEmptyState(BuildContext context, NutritionProvider provider) {
-    // Demo cards representing Figma Screen 1 layout when DB is fresh
-    final demoItems = [
-      FoodItem(
-        id: 'demo_1',
-        name: 'ข้าวกะเพราไก่ไข่ดาว',
-        calories: 560,
-        protein: 26,
-        carbohydrates: 65,
-        fat: 20,
-        imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=150',
-        scannedAt: DateTime.now(),
-        source: 'ai_vision',
-      ),
-      FoodItem(
-        id: 'demo_2',
-        name: 'ข้าวโอ๊ตออร์แกนิก เนเชอร์สพ...',
-        calories: 190,
-        protein: 6,
-        carbohydrates: 32,
-        fat: 4,
-        imageUrl: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(hours: 4)),
-        source: 'barcode_scan',
-      ),
-      FoodItem(
-        id: 'demo_3',
-        name: 'โยเกิร์ตกรีกพร้อมเบอร์รีรวม',
-        calories: 180,
-        protein: 12,
-        carbohydrates: 20,
-        fat: 5,
-        imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(days: 1)),
-        source: 'barcode_scan',
-      ),
-      FoodItem(
-        id: 'demo_4',
-        name: 'ชามสลัดแซลมอนย่าง',
-        calories: 520,
-        protein: 34,
-        carbohydrates: 28,
-        fat: 22,
-        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150',
-        scannedAt: DateTime.now().subtract(const Duration(days: 1, hours: 4)),
-        source: 'ai_vision',
-      ),
-    ];
-
-    if (provider.selectedFilter != 'all') {
-      final filtered = demoItems.where((i) => i.source == provider.selectedFilter).toList();
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          children: filtered
-              .map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _buildFoodCard(context, provider, item),
-                  ))
-              .toList(),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...demoItems.take(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildFoodCard(context, provider, item),
-              )),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    'เมื่อวานนี้, 23 ต.ค.',
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'รวม 700 กิโลแคลอรี่',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ...demoItems.skip(2).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildFoodCard(context, provider, item),
-              )),
-        ],
-      ),
-    );
-  }
-
   String _formatDisplayDate(DateTime date) {
     final now = DateTime.now();
+    const months = [
+      'ม.ค.',
+      'ก.พ.',
+      'มี.ค.',
+      'เม.ย.',
+      'พ.ค.',
+      'มิ.ย.',
+      'ก.ค.',
+      'ส.ค.',
+      'ก.ย.',
+      'ต.ค.',
+      'พ.ย.',
+      'ธ.ค.',
+    ];
+    final monthStr = months[date.month - 1];
     if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return 'วันนี้, ${date.day} ต.ค.';
+      return 'วันนี้, ${date.day} $monthStr';
     }
-    return '${date.day} ต.ค. ${date.year + 543}';
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+      return 'เมื่อวาน, ${date.day} $monthStr';
+    }
+    return '${date.day} $monthStr ${date.year + 543}';
   }
 }

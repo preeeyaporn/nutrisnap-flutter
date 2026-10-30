@@ -13,6 +13,7 @@ class NutritionProvider extends ChangeNotifier {
   FoodItem? _currentProduct;
   NutritionAnalysisResult? _currentAiAnalysis;
   List<int>? _lastCapturedImageBytes;
+  String? _lastCapturedImagePath;
   ScanStatus _scanStatus = ScanStatus.idle;
   String? _errorMessage;
   bool _isLoading = false;
@@ -32,6 +33,7 @@ class NutritionProvider extends ChangeNotifier {
   FoodItem? get currentProduct => _currentProduct;
   NutritionAnalysisResult? get currentAiAnalysis => _currentAiAnalysis;
   List<int>? get lastCapturedImageBytes => _lastCapturedImageBytes;
+  String? get lastCapturedImagePath => _lastCapturedImagePath;
   ScanStatus get scanStatus => _scanStatus;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -45,34 +47,126 @@ class NutritionProvider extends ChangeNotifier {
 
   int get unsyncedCount => _recentScans.where((item) => !item.isSynced).length;
 
-  double get totalCaloriesToday {
-    final now = DateTime.now();
-    return _recentScans
-        .where((item) =>
-            item.scannedAt.year == now.year &&
-            item.scannedAt.month == now.month &&
-            item.scannedAt.day == now.day)
-        .fold(0.0, (sum, item) => sum + item.calories);
+  /// คำนวณแคลอรี่รวมของวันนี้
+  double get totalCaloriesToday => getTotalCaloriesForDate(DateTime.now());
+
+  /// คำนวณสารอาหารหลักรวมของวันนี้
+  Map<String, double> get totalMacrosToday => getTotalMacrosForDate(DateTime.now());
+
+  /// สรุปจำนวนมื้ออาหารของวันที่กำหนด โดยสามารถแยกตัวกรองที่มา ('all', 'barcode_scan', 'ai_vision')
+  int getMealCountForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    if (source != null && source != 'all') {
+      if (source == 'ai_vision' || source == 'gemini_vision') {
+        return dayItems.where((item) => item.isAi).length;
+      } else if (source == 'barcode_scan') {
+        return dayItems.where((item) => item.isBarcode).length;
+      }
+      return dayItems.where((item) => item.source == source).length;
+    }
+    return dayItems.length;
   }
 
-  Map<String, double> get totalMacrosToday {
-    final now = DateTime.now();
-    final todayItems = _recentScans.where((item) =>
-        item.scannedAt.year == now.year &&
-        item.scannedAt.month == now.month &&
-        item.scannedAt.day == now.day);
+  /// สรุปแคลอรี่รวมของวันที่กำหนด โดยสามารถแยกตัวกรองที่มา ('all', 'barcode_scan', 'ai_vision')
+  double getTotalCaloriesForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    final targetItems = (source != null && source != 'all')
+        ? ((source == 'ai_vision' || source == 'gemini_vision')
+            ? dayItems.where((item) => item.isAi)
+            : ((source == 'barcode_scan')
+                ? dayItems.where((item) => item.isBarcode)
+                : dayItems.where((item) => item.source == source)))
+        : dayItems;
+
+    return targetItems.fold<double>(0.0, (sum, item) => sum + item.calories);
+  }
+
+  /// สรุปสารอาหารหลัก (โปรตีน, คาร์บ, ไขมัน) ของวันที่กำหนด แยกตามที่มาได้
+  Map<String, double> getTotalMacrosForDate(DateTime date, {String? source}) {
+    final dayItems = _recentScans.where((item) =>
+        item.scannedAt.year == date.year &&
+        item.scannedAt.month == date.month &&
+        item.scannedAt.day == date.day);
+
+    final targetItems = (source != null && source != 'all')
+        ? ((source == 'ai_vision' || source == 'gemini_vision')
+            ? dayItems.where((item) => item.isAi)
+            : ((source == 'barcode_scan')
+                ? dayItems.where((item) => item.isBarcode)
+                : dayItems.where((item) => item.source == source)))
+        : dayItems;
 
     double protein = 0.0;
     double carbs = 0.0;
     double fat = 0.0;
 
-    for (final item in todayItems) {
+    for (final item in targetItems) {
       protein += item.protein;
       carbs += item.carbohydrates;
       fat += item.fat;
     }
 
     return {'protein': protein, 'carbs': carbs, 'fat': fat};
+  }
+
+  /// ดึงรายการอาหารของวันที่กำหนด ตามตัวกรอง (searchQuery, selectedFilter, sortBy)
+  List<FoodItem> getFilteredScansForDate(DateTime date) {
+    var items = _recentScans
+        .where((item) =>
+            item.scannedAt.year == date.year &&
+            item.scannedAt.month == date.month &&
+            item.scannedAt.day == date.day)
+        .toList();
+
+    // 1. Search Query Filter
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.toLowerCase().trim();
+      items = items
+          .where((item) =>
+              item.name.toLowerCase().contains(q) ||
+              item.brand.toLowerCase().contains(q) ||
+              item.barcode.contains(q))
+          .toList();
+    }
+
+    // 2. Category / Source Filter
+    if (_selectedFilter == 'favorites') {
+      items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter == 'ai_vision' || _selectedFilter == 'gemini_vision') {
+      items = items.where((item) => item.isAi).toList();
+    } else if (_selectedFilter == 'barcode_scan') {
+      items = items.where((item) => item.isBarcode).toList();
+    } else if (_selectedFilter != 'all') {
+      items = items.where((item) => item.source == _selectedFilter).toList();
+    }
+
+    // 3. Sorting
+    switch (_sortBy) {
+      case 'oldest':
+        items.sort((a, b) => a.scannedAt.compareTo(b.scannedAt));
+        break;
+      case 'calories':
+        items.sort((a, b) => b.calories.compareTo(a.calories));
+        break;
+      case 'nutriScore':
+        items.sort(
+            (a, b) => (a.nutriScore ?? 'Z').compareTo(b.nutriScore ?? 'Z'));
+        break;
+      case 'newest':
+      default:
+        items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
+        break;
+    }
+
+    return items;
   }
 
   Map<String, int> get nutriScoreCounts {
@@ -103,6 +197,10 @@ class NutritionProvider extends ChangeNotifier {
     // 2. Category / Source Filter
     if (_selectedFilter == 'favorites') {
       items = items.where((item) => item.isFavorite).toList();
+    } else if (_selectedFilter == 'ai_vision' || _selectedFilter == 'gemini_vision') {
+      items = items.where((item) => item.isAi).toList();
+    } else if (_selectedFilter == 'barcode_scan') {
+      items = items.where((item) => item.isBarcode).toList();
     } else if (_selectedFilter != 'all') {
       items = items.where((item) => item.source == _selectedFilter).toList();
     }
@@ -309,23 +407,26 @@ class NutritionProvider extends ChangeNotifier {
     List<int> imageBytes, {
     String mimeType = 'image/jpeg',
     String? userNotes,
+    String? imagePath,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     _lastCapturedImageBytes = imageBytes;
+    _lastCapturedImagePath = imagePath;
     notifyListeners();
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: imageBytes,
       mimeType: mimeType,
       userNotes: userNotes,
+      imagePath: imagePath,
     );
 
     _isLoading = false;
     return result.when(
       success: (analysis) {
         _currentAiAnalysis = analysis;
-        _currentProduct = analysis.toFoodItem();
+        _currentProduct = analysis.toFoodItem(imageUrl: imagePath);
         loadRecentScans();
         notifyListeners();
         return true;
@@ -341,6 +442,7 @@ class NutritionProvider extends ChangeNotifier {
   Future<bool> recalculateWithFoodCorrection({
     required String correctedFoodName,
     List<int>? imageBytes,
+    String? imagePath,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -349,19 +451,21 @@ class NutritionProvider extends ChangeNotifier {
     final bytes = imageBytes ??
         _lastCapturedImageBytes ??
         List<int>.generate(100, (i) => i);
+    final path = imagePath ?? _lastCapturedImagePath;
     final prompt =
         'ผู้ใช้ระบุว่าอาหารในภาพนี้คือ "$correctedFoodName" (ไม่ใช่ที่ตรวจจับได้ก่อนหน้า) กรุณาวิเคราะห์ภาพร่วมกับชื่ออาหาร "$correctedFoodName" และคำนวณคุณค่าทางโภชนาการ สัดส่วน แคลอรี่ โปรตีน คาร์โบไฮเดรต ไขมัน น้ำตาล ใยอาหาร โซเดียม และส่วนผสมใหม่ทั้งหมดอย่างละเอียด';
 
     final result = await _repository.analyzeFoodImage(
       imageBytes: bytes,
       userNotes: prompt,
+      imagePath: path,
     );
 
     _isLoading = false;
     return result.when(
       success: (analysis) {
         _currentAiAnalysis = analysis;
-        _currentProduct = analysis.toFoodItem();
+        _currentProduct = analysis.toFoodItem(imageUrl: path);
         loadRecentScans();
         notifyListeners();
         return true;
@@ -376,8 +480,10 @@ class NutritionProvider extends ChangeNotifier {
 
   Future<FoodItem> saveCurrentAiMeal({
     NutritionAnalysisResult? customAnalysis,
+    String? imageUrl,
   }) async {
     final analysis = customAnalysis ?? _currentAiAnalysis;
+    final path = imageUrl ?? _lastCapturedImagePath;
     final foodItem = (analysis ??
             NutritionAnalysisResult(
               foodName: 'ข้าวกะเพราไก่ไข่ดาว',
@@ -401,7 +507,7 @@ class NutritionProvider extends ChangeNotifier {
                   'หมายเหตุ: ค่าความเป็นไป AI vision 94% ค่าโภชนาการถูกปรับเทียบกับการดูดซับน้ำมันจากการผัดอาหารตามสั่งไทย',
               analyzedAt: DateTime.now(),
             ))
-        .toFoodItem();
+        .toFoodItem(imageUrl: path);
 
     await _repository.saveFoodItem(foodItem);
     _currentProduct = foodItem;
@@ -453,8 +559,15 @@ class NutritionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
+
   void updateUserId(String newUserId) {
-    _repository.updateUserId(newUserId);
+    if (_currentUserId != newUserId) {
+      _currentUserId = newUserId;
+      _repository.updateUserId(newUserId);
+      loadRecentScans();
+    }
   }
 
   void updateUserInfo({
@@ -463,12 +576,37 @@ class NutritionProvider extends ChangeNotifier {
     String? displayName,
     double? dailyTarget,
   }) {
+    final userChanged = _currentUserId != newUserId;
+    _currentUserId = newUserId;
     _repository.updateUserInfo(
       newUserId: newUserId,
       email: email,
       displayName: displayName,
       dailyTarget: dailyTarget,
     );
+    if (userChanged) {
+      loadRecentScans();
+      syncFromCloud();
+    }
+  }
+
+  Future<void> syncFromCloud() async {
+    final res = await _repository.syncFromCloud();
+    if (res.isSuccess && (res.dataOrNull?.isNotEmpty ?? false)) {
+      await loadRecentScans();
+    }
+  }
+
+  Future<void> clearUserData({bool clearLocalDb = false}) async {
+    if (clearLocalDb) {
+      await _repository.clearAll();
+    }
+    _currentUserId = null;
+    _recentScans = [];
+    _currentProduct = null;
+    _currentAiAnalysis = null;
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<bool> syncCloud() async {

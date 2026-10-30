@@ -119,11 +119,12 @@ class NutritionAnalysisResult {
   }
 
   /// Converts AI result into a persistent FoodItem entity
-  FoodItem toFoodItem({String? customId}) {
+  FoodItem toFoodItem({String? customId, String? imageUrl}) {
     return FoodItem(
       id: customId ?? 'ai_${DateTime.now().millisecondsSinceEpoch}',
       name: foodName,
       brand: 'Gemini 1.5 Flash Vision',
+      imageUrl: imageUrl,
       servingSize: estimatedPortion,
       calories: calories,
       protein: protein,
@@ -135,7 +136,7 @@ class NutritionAnalysisResult {
       nutriScore: healthScore.replaceAll('เกรด ', '').trim(),
       scannedAt: analyzedAt,
       ingredients: detectedIngredients,
-      source: 'gemini_vision',
+      source: 'ai_vision',
     );
   }
 }

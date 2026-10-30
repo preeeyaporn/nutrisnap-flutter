@@ -7,6 +7,7 @@ import 'package:nutrisnap/features/camera/presentation/screens/ai_food_camera_sc
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 import 'package:nutrisnap/features/nutrition/presentation/screens/nutrition_detail_screen.dart';
+import 'package:nutrisnap/features/nutrition/presentation/widgets/food_image_view.dart';
 import 'package:nutrisnap/features/scanner/presentation/screens/barcode_scanner_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -313,20 +314,13 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSummaryCard(BuildContext context) {
-    final recentScans = context.watch<NutritionProvider>().recentScans;
-    final mealsCount = recentScans.length;
-    final totalCalories = recentScans
-        .fold<double>(0, (sum, item) => sum + item.calories)
-        .toInt();
-    final totalProtein = recentScans
-        .fold<double>(0, (sum, item) => sum + item.protein)
-        .toInt();
-    final totalCarbs = recentScans
-        .fold<double>(0, (sum, item) => sum + item.carbohydrates)
-        .toInt();
-    final totalFat = recentScans
-        .fold<double>(0, (sum, item) => sum + item.fat)
-        .toInt();
+    final provider = context.watch<NutritionProvider>();
+    final mealsCount = provider.getMealCountForDate(DateTime.now());
+    final totalCalories = provider.getTotalCaloriesForDate(DateTime.now()).toInt();
+    final macros = provider.getTotalMacrosForDate(DateTime.now());
+    final totalProtein = (macros['protein'] ?? 0.0).toInt();
+    final totalCarbs = (macros['carbs'] ?? 0.0).toInt();
+    final totalFat = (macros['fat'] ?? 0.0).toInt();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -737,19 +731,12 @@ class HomeScreen extends StatelessWidget {
                     // Meal Image / Placeholder Icon
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Container(
+                      child: FoodImageView(
+                        item: item,
                         width: 58,
                         height: 58,
-                        color: Colors.white,
-                        child:
-                            item.imageUrl != null &&
-                                item.imageUrl!.startsWith('http')
-                            ? Image.network(
-                                item.imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => _buildMealIcon(item),
-                              )
-                            : _buildMealIcon(item),
+                        fit: BoxFit.cover,
+                        placeholder: _buildMealIcon(item),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -785,7 +772,7 @@ class HomeScreen extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  item.source == 'barcode_scan'
+                                  item.isBarcode
                                       ? Icons.qr_code_rounded
                                       : Icons.auto_awesome,
                                   size: 11,
@@ -794,7 +781,7 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    item.source == 'barcode_scan'
+                                    item.isBarcode
                                         ? 'บาร์โค้ด'
                                         : 'AI ประมาณการ',
                                     style: AppTypography.chipText.copyWith(
@@ -823,14 +810,73 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Right time text if available
-                    Text(
-                      _getRelativeTimeString(item.scannedAt),
-                      style: AppTypography.bodySmall.copyWith(
-                        color: const Color(0xFF94A3B8),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    // Right side: relative time + quick delete button
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _getRelativeTimeString(item.scannedAt),
+                          style: AppTypography.bodySmall.copyWith(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 18,
+                          ),
+                          tooltip: 'ลบรายการ',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                title: Row(
+                                  children: const [
+                                    Icon(Icons.delete_sweep_outlined, color: Color(0xFFEF4444), size: 24),
+                                    SizedBox(width: 8),
+                                    Text('ลบรายการอาหาร', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                content: Text('คุณต้องการลบ "${item.name}" ออกจากประวัติใช่หรือไม่?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('ยกเลิก', style: TextStyle(color: Color(0xFF64748B))),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFFEF4444),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: const Text('ลบรายการ'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true && context.mounted) {
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              await context.read<NutritionProvider>().deleteFoodItem(item.id);
+                              scaffoldMessenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('ลบ "${item.name}" เรียบร้อยแล้ว'),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

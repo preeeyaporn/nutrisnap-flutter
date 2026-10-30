@@ -94,7 +94,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('สถานะการซิงค์'), findsOneWidget);
-      expect(find.text('ความสามารถของอุปกรณ์ขณะออฟไลน์'), findsOneWidget);
+      expect(find.text('รายการที่แคชไว้ในเครื่อง'), findsOneWidget);
 
       // 9. Navigate back to Home Tab
       final homeTab = find.text('หน้าหลัก').last;

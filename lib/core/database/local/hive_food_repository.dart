@@ -156,13 +156,13 @@ class HiveFoodRepository implements FoodRepository {
   Future<Result<List<FoodItem>>> getUnsyncedFoodItems() async {
     try {
       final allResult = await getAllFoodItems();
-      return allResult.when(
-        success: (items) {
-          final unsynced = items.where((item) => !item.isSynced).toList();
-          return Result.success(unsynced);
-        },
-        failure: (msg, ex) => Result.failure(msg, ex),
-      );
+      if (allResult is Success<List<FoodItem>>) {
+        final unsynced = allResult.data.where((item) => !item.isSynced).toList();
+        return Result.success(unsynced);
+      } else if (allResult is Failure<List<FoodItem>>) {
+        return Result.failure(allResult.message, allResult.exception);
+      }
+      return const Result.failure('ไม่สามารถดึงข้อมูลที่ยังไม่ได้ซิงค์');
     } catch (e) {
       return Result.failure('ไม่สามารถดึงข้อมูลที่ยังไม่ได้ซิงค์: $e');
     }

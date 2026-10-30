@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nutrisnap/core/constants/app_typography.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/food_item.dart';
 import 'package:nutrisnap/features/nutrition/domain/models/nutrition_analysis_result.dart';
+import '../widgets/food_image_view.dart';
 import 'package:nutrisnap/features/nutrition/presentation/providers/nutrition_provider.dart';
 
 /// Screen 10 — Meal Detail (TH)
@@ -1054,7 +1055,10 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       } catch (_) {}
     }
 
-    return Image.asset(
+    return FoodImageView(
+      item: _item,
+      fit: BoxFit.cover,
+      placeholder: Image.asset(
       'assets/images/screen_meal_detail_guide.png',
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => Image.asset(
@@ -1070,6 +1074,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
